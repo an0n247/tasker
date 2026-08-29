@@ -2,23 +2,85 @@
 @source "../src";
 @import "tw-animate-css";
 
+/* Custom Scrollbar for Auth Form */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--muted);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+:root {
+  --app-sidebar-w: 18rem;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+/* RGB neon light that travels around the edge of a rounded container */
+
+@property --rgb-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes rgb-rotate {
+  0% {
+    --rgb-angle: 0deg;
+  }
+  100% {
+    --rgb-angle: 360deg;
+  }
+}
+
+/* NOTE: no `position` here — wrappers may be `fixed`; add `relative`
+   alongside this class when the element is not otherwise positioned. */
+.rgb-neon-wrapper {
+  padding: 1.5px;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: conic-gradient(
+    from var(--rgb-angle),
+    rgba(255, 0, 0, 1) 0deg,
+    rgba(255, 127, 0, 1) 65deg,
+    rgba(255, 255, 0, 1) 105deg,
+    rgba(0, 255, 0, 1) 145deg,
+    rgba(0, 255, 255, 1) 185deg,
+    rgba(0, 0, 255, 1) 225deg,
+    rgba(139, 0, 255, 1) 265deg,
+    rgba(255, 0, 0, 1) 320deg,
+    rgba(255, 0, 0, 1) 360deg
+  );
+  animation: rgb-rotate 3s linear infinite;
+  box-shadow: 0 0 10px rgba(0, 255, 220, 0.35);
+}
+
+.rgb-neon-inner {
+  position: relative;
+  z-index: 1;
+  border-radius: calc(1rem - 1.5px);
+}
+
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
+  --font-sans:
+    "Urbanist", "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    sans-serif;
+  --font-heading: "Urbanist", sans-serif;
+  --font-display: "Urbanist", sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -51,6 +113,14 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ink-fg: var(--ink-fg);
+  --color-ink-muted: var(--ink-muted);
+  --color-hairline: var(--hairline);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -62,77 +132,106 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --radius: 1rem;
+  --ink: oklch(100% 0 0);
+  --ink-2: oklch(98.2% 0.003 95);
+  --ink-3: oklch(94.8% 0.006 95);
+  --ink-fg: oklch(19% 0.012 80);
+  --ink-muted: oklch(48% 0.018 80);
+  --hairline: oklch(19% 0.012 80 / 0.1);
+  --gold: oklch(58% 0.12 82);
+  --gold-soft: oklch(70% 0.11 82);
+  --background: oklch(98.4% 0.005 247.858);
+  --foreground: #002d26; /* Deep Green from new Noble Gain logo */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.129 0.042 264.695);
+  --card-foreground: #002d26;
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
+  --popover-foreground: #002d26;
+  --primary: #002d26; /* Deep Green from new Noble Gain logo */
   --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
-  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --secondary: #e6c17a; /* Muted Gold from new Noble Gain logo */
+  --secondary-foreground: #002d26;
   --muted: oklch(0.968 0.007 247.896);
-  --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --muted-foreground: oklch(0.7 0.01 247.858);
+  --accent: #e6c17a22;
+  --accent-foreground: #002d26;
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.929 0.013 255.508);
   --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
+  --ring: #002d26;
+  --chart-1: #002d26;
+  --chart-2: #e6c17a;
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.984 0.003 247.858);
-  --sidebar-foreground: oklch(0.129 0.042 264.695);
-  --sidebar-primary: oklch(0.208 0.042 265.755);
+  --sidebar: oklch(0.984 0.005 247.858);
+  --sidebar-foreground: #002d26;
+  --sidebar-primary: #002d26;
   --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.968 0.007 247.896);
-  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
+  --sidebar-accent: #e6c17a22;
+  --sidebar-accent-foreground: #002d26;
   --sidebar-border: oklch(0.929 0.013 255.508);
-  --sidebar-ring: oklch(0.704 0.04 256.788);
+  --sidebar-ring: #002d26;
 }
 
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --ink: oklch(11.5% 0.004 285);
+  --ink-2: oklch(16.5% 0.006 285);
+  --ink-3: oklch(23.5% 0.008 285);
+  --ink-fg: oklch(97.2% 0.004 95);
+  --ink-muted: oklch(72% 0.012 285);
+  --hairline: oklch(100% 0 0 / 0.11);
+  --gold: oklch(76% 0.13 82);
+  --gold-soft: oklch(86% 0.09 82);
+  --background: oklch(11.5% 0.004 285);
+  --foreground: oklch(97.2% 0.004 95);
+  --card: oklch(16.5% 0.006 285);
+  --card-foreground: oklch(97.2% 0.004 95);
+  --popover: oklch(15.5% 0.006 285);
+  --popover-foreground: oklch(97.2% 0.004 95);
+  --primary: oklch(76% 0.13 82);
+  --primary-foreground: oklch(13% 0.006 285);
+  --secondary: oklch(23.5% 0.008 285);
+  --secondary-foreground: oklch(97.2% 0.004 95);
+  --muted: oklch(23.5% 0.008 285);
+  --muted-foreground: oklch(72% 0.012 285);
+  --accent: oklch(76% 0.13 82 / 0.14);
+  --accent-foreground: oklch(97.2% 0.004 95);
+  --destructive: oklch(70.4% 0.191 22.216);
+  --destructive-foreground: oklch(98.4% 0.003 247.858);
+  --border: oklch(100% 0 0 / 0.12);
+  --input: oklch(100% 0 0 / 0.16);
+  --ring: oklch(76% 0.13 82);
+  --chart-1: oklch(76% 0.13 82);
+  --chart-2: oklch(70% 0.12 250);
+  --chart-3: oklch(76.9% 0.188 70.08);
+  --chart-4: oklch(62.7% 0.265 303.9);
+  --chart-5: oklch(64.5% 0.246 16.439);
+  --sidebar: oklch(14.5% 0.005 285);
+  --sidebar-foreground: oklch(97.2% 0.004 95);
+  --sidebar-primary: oklch(76% 0.13 82);
+  --sidebar-primary-foreground: oklch(13% 0.006 285);
+  --sidebar-accent: oklch(23.5% 0.008 285);
+  --sidebar-accent-foreground: oklch(97.2% 0.004 95);
+  --sidebar-border: oklch(100% 0 0 / 0.1);
+  --sidebar-ring: oklch(76% 0.13 82);
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family:
+      "Urbanist",
+      "Plus Jakarta Sans",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
+    font-weight: 400;
+  }
+
   * {
     border-color: var(--color-border);
   }
@@ -140,5 +239,483 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family:
+      "Urbanist",
+      "Plus Jakarta Sans",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      Roboto,
+      sans-serif;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
   }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, var(--color-border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--color-border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.4;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .font-heading,
+  .font-display {
+    font-family: "Urbanist", sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+
+  /* Make heavy weights lighter and more elegant across the platform */
+  .font-black {
+    font-weight: 700 !important;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Premium Glassmorphism Utilities */
+  .glass-card {
+    background: color-mix(in oklch, var(--color-card) 85%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid color-mix(in oklch, var(--color-border) 60%, transparent);
+    box-shadow: 0 8px 32px color-mix(in oklch, var(--color-foreground) 8%, transparent);
+  }
+
+  .glass-card-hover {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px color-mix(in oklch, var(--color-foreground) 12%, transparent);
+    border-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-gradient {
+    background:
+      radial-gradient(
+        ellipse at top,
+        color-mix(in oklch, var(--color-primary) 8%, transparent) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse at bottom right,
+        color-mix(in oklch, var(--color-secondary) 6%, transparent) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse at bottom left,
+        color-mix(in oklch, var(--color-primary) 5%, transparent) 0%,
+        transparent 50%
+      );
+  }
+
+  .floating-blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.5;
+    animation: float 20s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    25% {
+      transform: translate(20px, -30px) scale(1.1);
+    }
+    50% {
+      transform: translate(-15px, 20px) scale(0.95);
+    }
+    75% {
+      transform: translate(25px, 15px) scale(1.05);
+    }
+  }
+
+  .premium-shadow {
+    box-shadow:
+      0 4px 24px color-mix(in oklch, var(--color-foreground) 10%, transparent),
+      0 0 0 1px color-mix(in oklch, var(--color-border) 40%, transparent);
+  }
+
+  .premium-shadow-lg {
+    box-shadow:
+      0 8px 40px color-mix(in oklch, var(--color-foreground) 15%, transparent),
+      0 0 0 1px color-mix(in oklch, var(--color-border) 30%, transparent);
+  }
+
+  .animate-reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .counter-number {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  position: relative;
+  scroll-behavior: smooth;
+  overflow-x: clip;
+}
+
+/* Global scroll management */
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+}
+
+.auth-shell {
+  flex: 1;
+  background: var(--color-background);
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+
+.auth-shell::before,
+.auth-shell::after,
+.auth-blob {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.6;
+  z-index: -1;
+  animation: blob-float 20s infinite ease-in-out;
+}
+
+.auth-shell::before {
+  width: 25rem;
+  height: 25rem;
+  top: -5rem;
+  left: -5rem;
+  background: color-mix(in oklch, var(--color-primary) 15%, transparent);
+  animation-delay: 0s;
+}
+
+.auth-shell::after {
+  width: 20rem;
+  height: 20rem;
+  right: -5rem;
+  bottom: -5rem;
+  background: color-mix(in oklch, var(--color-secondary) 60%, transparent);
+  animation-delay: -5s;
+}
+
+.auth-blob {
+  width: 15rem;
+  height: 15rem;
+  top: 40%;
+  left: 60%;
+  background: color-mix(in oklch, var(--color-primary) 10%, transparent);
+  animation-duration: 25s;
+  animation-delay: -10s;
+}
+
+@keyframes blob-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+}
+
+.auth-card {
+  position: relative;
+  border: 1px solid color-mix(in oklch, var(--color-border) 75%, transparent);
+  background: color-mix(in oklch, var(--color-card) 92%, transparent);
+  backdrop-filter: blur(18px);
+  animation: auth-card-in 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.auth-mark {
+  background: var(--color-secondary);
+  box-shadow: 0 12px 30px rgba(0, 45, 38, 0.18);
+}
+
+.auth-input {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.auth-input:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-ring) 14%, transparent);
+}
+
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes neon-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(0, 45, 38, 0.4);
+    opacity: 0.8;
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(230, 193, 122, 0.7);
+    opacity: 1;
+  }
+}
+
+.animate-neon-pulse::after {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+.ink-dots {
+  background-image: radial-gradient(var(--hairline) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.ink-header-shadow {
+  box-shadow: 0 10px 30px -15px rgba(0, 0, 0, 0.7);
+}
+
+.mock-sheen {
+  isolation: isolate;
+  position: relative;
+}
+
+.mock-sheen:after {
+  content: "";
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--color-gold), transparent);
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  animation: 6.5s ease-in-out infinite mock-sheen;
+}
+
+@supports (color: color-mix(in lab, red, red)) {
+  .mock-sheen:after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--color-gold) 14%, transparent),
+      transparent
+    );
+  }
+}
+
+.mock-float {
+  will-change: transform;
+  animation: 7s ease-in-out infinite mock-float;
+}
+
+.mock-bar {
+  transform-origin: bottom;
+  animation: 3.6s ease-in-out infinite mock-bar;
+}
+
+.mock-count {
+  animation: 4s ease-in-out infinite mock-count;
+}
+
+.mock-fill {
+  animation: 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards mock-fill;
+}
+
+.mock-ping {
+  animation: 2s ease-out infinite mock-ping;
+}
+
+.mock-row-in {
+  animation: 5s ease-out both mock-row-in;
+}
+
+.ink-breathe {
+  animation: 12s ease-in-out infinite ink-breathe;
+}
+
+@keyframes ink-breathe {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: translate(0) scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: translateY(-12px) scale(1.04);
+  }
+}
+
+@keyframes mock-float {
+  0%,
+  100% {
+    transform: translate(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes mock-sheen {
+  0% {
+    opacity: 0;
+    transform: translate(-120%) skew(-12deg);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(220%) skew(-12deg);
+  }
+}
+
+@keyframes mock-bar {
+  0% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+  100% {
+    transform: scaleY(0.35);
+  }
+}
+
+@keyframes mock-fill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: var(--fill, 100%);
+  }
+}
+
+@keyframes mock-row-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  12%,
+  88% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mock-count {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  48% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes mock-ping {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--color-gold) 55%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mock-float,
+  .mock-bar,
+  .mock-count,
+  .mock-ping,
+  .mock-row-in,
+  .mock-fill {
+    animation: none !important;
+  }
+  .mock-sheen:after {
+    opacity: 0 !important;
+    animation: none !important;
+  }
+}
+
+a[href*="lovable.app"],
+iframe[src*="lovable.app"],
+a[href*="lovable.dev"],
+iframe[src*="lovable.dev"],
+div[style*="Edit with Lovable"],
+.lovable-badge,
+[class*="lovable"],
+[id*="lovable"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  z-index: -9999 !important;
 }

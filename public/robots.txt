@@ -1,14 +1,17 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Allow: /about
+Allow: /auth
+Allow: /terms
+Allow: /privacy
+Disallow: /admin
+Disallow: /moderator
+Disallow: /tasker
+Disallow: /dashboard
+Disallow: /transactions
+Disallow: /settings
+Disallow: /profile
+Disallow: /redeem
+Disallow: /refer
+
+Sitemap: https://noblegain.bytsphere.buzz/sitemap.xml

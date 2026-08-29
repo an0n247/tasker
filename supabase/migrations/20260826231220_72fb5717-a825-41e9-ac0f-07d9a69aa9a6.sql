@@ -1,0 +1,11 @@
+GRANT ALL ON SCHEMA public TO sandbox_exec;
+GRANT USAGE ON SCHEMA auth, storage, extensions TO sandbox_exec;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO sandbox_exec;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO sandbox_exec;
+GRANT TRIGGER, SELECT, REFERENCES ON auth.users TO sandbox_exec;
+GRANT ALL ON storage.objects TO sandbox_exec;
+GRANT ALL ON storage.buckets TO sandbox_exec;
+GRANT anon, authenticated, service_role TO sandbox_exec;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO sandbox_exec;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO sandbox_exec;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO sandbox_exec;

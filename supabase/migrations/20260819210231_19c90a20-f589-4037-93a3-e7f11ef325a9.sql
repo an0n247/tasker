@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.update_user_points_balance() FROM PUBLIC, anon, authenticated;

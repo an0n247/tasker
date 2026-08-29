@@ -1,12 +1,14 @@
-# Tasker
+# Noble Gain
 
-hello
+i want to vibe code a website
 
 This project was built with [Lovable](https://lovable.dev).
 
+**Live app**: https://noblegain.bytsphere.buzz
+
 ## Build with Lovable
 
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/c9d05a01-285f-4d75-ab8e-073e8f7ad058).
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/6935d9db-d3e9-473c-9040-7c3d7835abcd).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
 - **Stay in sync**: every change made in Lovable is committed straight to this repository.

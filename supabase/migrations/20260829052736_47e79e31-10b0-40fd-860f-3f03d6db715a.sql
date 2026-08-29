@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role, sandbox_exec;

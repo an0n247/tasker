@@ -1,0 +1,12 @@
+DROP FUNCTION IF EXISTS public._restore_exec(text);
+REVOKE ALL ON SCHEMA public FROM sandbox_exec;
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM sandbox_exec;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM sandbox_exec;
+REVOKE ALL ON storage.objects FROM sandbox_exec;
+REVOKE ALL ON storage.buckets FROM sandbox_exec;
+REVOKE anon, authenticated, service_role FROM sandbox_exec;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM sandbox_exec;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM sandbox_exec;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM sandbox_exec;
+GRANT USAGE ON SCHEMA public TO sandbox_exec;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO sandbox_exec;
