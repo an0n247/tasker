@@ -764,8 +764,9 @@ GRANT SELECT ON public.leaderboard TO anon;
 -- Migration: 20260819134917_d70ae6a8-31ee-4be5-9687-a401e77d462f.sql
 -- =============================================
 
-INSERT INTO public.user_roles (user_id, role) 
-VALUES ('3e18d6c9-1579-4673-812a-fcc6e43a428b', 'admin') 
+INSERT INTO public.user_roles (user_id, role)
+SELECT '3e18d6c9-1579-4673-812a-fcc6e43a428b'::uuid, 'admin'::public.app_role
+WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = '3e18d6c9-1579-4673-812a-fcc6e43a428b')
 ON CONFLICT (user_id, role) DO NOTHING;
 
 -- =============================================
@@ -4478,7 +4479,10 @@ ALTER FUNCTION public.check_referral_code(TEXT, UUID) SET search_path = public;
 -- Migration: 20260820234223_2596f4c4-3396-4c4d-aac1-b4c6e902cdbe.sql
 -- =============================================
 
-INSERT INTO public.user_roles (user_id, role) VALUES ('b687073f-357b-4490-868f-6e7d567b3da1', 'moderator') ON CONFLICT (user_id, role) DO NOTHING;
+INSERT INTO public.user_roles (user_id, role)
+SELECT 'b687073f-357b-4490-868f-6e7d567b3da1'::uuid, 'moderator'::public.app_role
+WHERE EXISTS (SELECT 1 FROM auth.users WHERE id = 'b687073f-357b-4490-868f-6e7d567b3da1')
+ON CONFLICT (user_id, role) DO NOTHING;
 
 -- =============================================
 -- Migration: 20260820235822_527d8963-8527-4a63-bf60-2e1aa87898b5.sql
