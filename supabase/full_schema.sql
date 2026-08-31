@@ -510,7 +510,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions, auth
 AS $$
 DECLARE
   meta_username TEXT;
@@ -518,6 +518,7 @@ DECLARE
   meta_referred_by TEXT;
   target_referral_code TEXT;
   referrer_user_id UUID;
+  v_counter INTEGER := 0;
 BEGIN
   meta_username := NULLIF(TRIM(new.raw_user_meta_data->>'username'), '');
   meta_full_name := NULLIF(TRIM(new.raw_user_meta_data->>'full_name'), '');
@@ -527,37 +528,68 @@ BEGIN
     new.raw_user_meta_data->>'referred_by'
   )), '');
 
-  target_referral_code := COALESCE(meta_username, substring(encode(gen_random_bytes(6), 'hex'), 1, 10));
+  -- Determine initial referral code
+  target_referral_code := meta_username;
 
-  IF meta_referred_by IS NOT NULL THEN
-    SELECT id INTO referrer_user_id FROM public.profiles 
-    WHERE lower(referral_code) = lower(meta_referred_by) LIMIT 1;
+  -- If no username or if target_referral_code is already taken by someone else, generate a unique random code
+  IF target_referral_code IS NULL OR EXISTS (SELECT 1 FROM public.profiles WHERE referral_code = target_referral_code AND id != new.id) THEN
+    LOOP
+      target_referral_code := LOWER(SUBSTRING(ENCODE(extensions.gen_random_bytes(6), 'hex'), 1, 8));
+      EXIT WHEN NOT EXISTS (SELECT 1 FROM public.profiles WHERE referral_code = target_referral_code AND id != new.id);
+      v_counter := v_counter + 1;
+      IF v_counter > 10 THEN
+        target_referral_code := LOWER(SUBSTRING(REPLACE(new.id::text, '-', ''), 1, 10));
+        EXIT;
+      END IF;
+    END LOOP;
   END IF;
 
+  -- Look up referrer if referral code was used
+  IF meta_referred_by IS NOT NULL THEN
+    SELECT id INTO referrer_user_id FROM public.profiles 
+    WHERE LOWER(referral_code) = LOWER(meta_referred_by) LIMIT 1;
+  END IF;
+
+  -- Insert/Update Profile
   INSERT INTO public.profiles (
-    id, email, username, full_name, referral_code, referral_code_used, referred_by
+    id,
+    email,
+    username,
+    full_name,
+    referral_code,
+    referral_code_used,
+    referred_by,
+    points_balance
   )
   VALUES (
     new.id,
-    new.email,
+    COALESCE(new.email, ''),
     meta_username,
     meta_full_name,
     target_referral_code,
     meta_referred_by,
-    referrer_user_id
+    referrer_user_id,
+    0
   )
   ON CONFLICT (id) DO UPDATE SET
     email = EXCLUDED.email,
     username = COALESCE(public.profiles.username, EXCLUDED.username),
     full_name = COALESCE(public.profiles.full_name, EXCLUDED.full_name),
-    referral_code = COALESCE(public.profiles.referral_code, EXCLUDED.referral_code);
+    referral_code = COALESCE(public.profiles.referral_code, EXCLUDED.referral_code),
+    referral_code_used = COALESCE(public.profiles.referral_code_used, EXCLUDED.referral_code_used),
+    referred_by = COALESCE(public.profiles.referred_by, EXCLUDED.referred_by);
 
   -- Assign default 'user' role
   INSERT INTO public.user_roles (user_id, role)
   VALUES (new.id, 'user')
   ON CONFLICT (user_id, role) DO NOTHING;
 
-  -- Create referral link record if valid
+  -- Initialize user streak
+  INSERT INTO public.user_streaks (user_id, current_streak, longest_streak, last_activity_at)
+  VALUES (new.id, 0, 0, NOW())
+  ON CONFLICT (user_id) DO NOTHING;
+
+  -- Create referral link record if valid referrer exists
   IF referrer_user_id IS NOT NULL THEN
     INSERT INTO public.referrals (referee_id, referrer_id)
     VALUES (new.id, referrer_user_id)
@@ -565,6 +597,10 @@ BEGIN
   END IF;
 
   RETURN new;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE WARNING 'handle_new_user error for user %: %', new.id, SQLERRM;
+    RETURN new;
 END;
 $$;
 
@@ -572,6 +608,8 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres, service_role, anon, authenticated;
 
 -- Balance Sync Trigger Function
 CREATE OR REPLACE FUNCTION public.update_user_points_balance()
