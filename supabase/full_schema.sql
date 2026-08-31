@@ -183,8 +183,8 @@ SET points_balance = COALESCE((
 ), 0);
 
 -- Revoke public execute on the trigger function
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_user_points_balance() FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_user_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_user_points_balance() FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_user_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -192,16 +192,16 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_user_points_balanc
 -- =============================================
 
 -- Fix security issues for handle_new_user
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
 -- Migration: 20260819123213_4d96bfe9-66ae-4250-a593-321c95b42f2e.sql
 -- =============================================
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -329,24 +329,24 @@ CREATE TRIGGER on_points_transaction
 -- Fixing security linter warnings
 
 -- 1. Fix search_path and execution for notify_on_points_transaction
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.notify_on_points_transaction() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.notify_on_points_transaction() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 2. Fix search_path and execution for has_role (already has search_path, just execution)
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 3. Fix handle_new_user from previous migration
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 4. Ensure RLS policies exist for user_roles (missed in migration)
 CREATE POLICY "Admins can read all roles" ON public.user_roles
@@ -411,8 +411,8 @@ END;
 $$;
 
 -- Ensure the function is executable by the necessary roles for triggers
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -437,8 +437,8 @@ GRANT SELECT ON public.leaderboard TO anon;
 
 -- Revoke public execution of handle_new_user to satisfy linter
 -- The postgres and service_role grants are enough for the trigger to work
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -464,8 +464,8 @@ GRANT SELECT ON public.leaderboard TO anon;
 -- Re-verify function permissions
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -473,10 +473,10 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO post
 -- =============================================
 
 -- Final attempt to satisfy linter by being extremely explicit about revoking from everyone including public
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 REVOKE ALL PRIVILEGES ON FUNCTION public.handle_new_user() FROM authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -535,7 +535,7 @@ BEGIN
 END;
 $$;
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -549,8 +549,8 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks
 -- execute if we had another way, but for click tracking, anon must be able to call it.
 -- However, to satisfy the linter's advice for common patterns, we can at least REVOKE from PUBLIC first.
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -596,31 +596,31 @@ $$;
 -- Migration: 20260819133952_ab8bdfb1-e97b-428a-aeba-04be69d0c88f.sql
 -- =============================================
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260819133957_a16bdeab-6388-466e-b143-c8f248d11c8f.sql
 -- =============================================
 
 -- Secure the handle_new_user function properly
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SECURITY DEFINER'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SECURITY DEFINER'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Secure points transaction triggers if they exist
 -- (Checking for common patterns based on previous messages)
 DO $$
 BEGIN
     IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'on_points_transaction') THEN
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.on_points_transaction() SECURITY DEFINER'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.on_points_transaction() SECURITY DEFINER'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
         REVOKE ALL ON FUNCTION public.on_points_transaction() FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.on_points_transaction() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.on_points_transaction() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
     END IF;
 END $$;
 
@@ -647,7 +647,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.get_user_email_by_username(TEXT) FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_user_email_by_username(TEXT) TO authenticated, anon, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_user_email_by_username(TEXT) TO authenticated, anon, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -733,14 +733,14 @@ GRANT SELECT ON public.leaderboard TO anon;
 
 
 -- Revoke execute from public to satisfy linter for SECURITY DEFINER functions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.get_user_email_by_username(TEXT) FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_user_email_by_username(TEXT) TO authenticated, anon, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_user_email_by_username(TEXT) TO authenticated, anon, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Re-create the view with security_invoker = true to satisfy linter (lint 0010)
 DROP VIEW IF EXISTS public.leaderboard;
@@ -839,7 +839,7 @@ begin
 end;
 $$;
 
-DO $\$ BEGIN EXECUTE 'grant execute on function public.claim_daily_reward(uuid) to authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'grant execute on function public.claim_daily_reward(uuid) to authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260819150033_8c277328-6e3a-4b5e-98a0-aaabc492ee9b.sql
@@ -935,7 +935,7 @@ SET points_balance = COALESCE((
 
 -- 1. Restrict claim_daily_reward
 REVOKE ALL ON FUNCTION public.claim_daily_reward(uuid) FROM public, anon, authenticated;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 2. Update claim_daily_reward to verify the caller matches the user_id argument
 CREATE OR REPLACE FUNCTION public.claim_daily_reward(_user_id uuid)
@@ -1019,20 +1019,20 @@ $function$;
 -- =============================================
 
 -- Revoke execute from public on all security definer functions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.get_user_email_by_username(text) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(text) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.get_user_email_by_username(text) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(text) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Grant execute only to the roles that actually need them
 GRANT EXECUTE ON FUNCTION public.get_user_email_by_username(text) TO authenticated, anon; -- Needed for sign-in logic
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated, anon; -- Needed for referral tracking on landing page
 
 -- The triggers handle_new_user and notify_on_points_transaction are called by the system (service_role)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- claim_daily_reward is already restricted to authenticated in the previous turn
 
@@ -1239,19 +1239,19 @@ $$;
 -- =============================================
 
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(text) FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(text) FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.get_user_email_by_username(text) FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_user_email_by_username(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.get_user_email_by_username(text) FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_user_email_by_username(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 -- handle_new_user is a trigger, usually executed by the system or a service role, 
 -- but we'll at least restrict PUBLIC/anon.
 
@@ -1293,20 +1293,20 @@ GRANT ALL ON public.task_submissions TO service_role;
 -- =============================================
 
 -- Secure SECURITY DEFINER functions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.get_user_email_by_username(text) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(text) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(uuid, app_role) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(uuid, app_role) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.get_user_email_by_username(text) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(text) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(uuid, app_role) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(uuid, app_role) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Grant execution to authenticated for necessary functions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 -- assign_role and remove_role should only be callable by admins, but as they are SECURITY DEFINER
 -- and used in the UI, we keep them restricted or handle role checks inside them.
 -- For now, let's keep them restricted from general authenticated users unless they are admins.
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Ensure service_role always has access
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO service_role;
@@ -1349,10 +1349,10 @@ GRANT ALL ON public.task_submissions TO service_role;
 
 -- Grant EXECUTE on the has_role function to authenticated users
 -- This is necessary for the app to check user roles in the frontend and routes.
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Also ensure it's callable by service_role for any backend work
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -1362,10 +1362,10 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) 
 
 -- Grant EXECUTE on submit_task to authenticated users
 -- This is required for users to be able to complete tasks and earn points.
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Also ensure it's callable by service_role
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -1445,11 +1445,11 @@ FOR EACH ROW EXECUTE FUNCTION public.handle_admin_audit_log();
 
 
 -- Secure handle_admin_audit_log
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_admin_audit_log() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_admin_audit_log() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 -- Triggers will still work because they are owned by postgres and the function is SECURITY DEFINER
 
 
@@ -1459,31 +1459,31 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() 
 
 
 -- Set search_path and restrict access for internal functions
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.notify_on_points_transaction() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.notify_on_points_transaction() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.update_points_balance_on_task_status_change() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.update_points_balance_on_task_status_change() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.log_task_status_change() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.log_task_status_change() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.log_task_status_change() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.log_task_status_change() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.log_user_task_activity() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.log_user_task_activity() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.log_user_task_activity() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.log_user_task_activity() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Functions that need to be callable by authenticated users but still need search_path
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.claim_daily_reward(uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.has_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.submit_task(uuid, uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.increment_referral_clicks(text) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.get_user_email_by_username(text) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.claim_daily_reward(uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.has_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.submit_task(uuid, uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.increment_referral_clicks(text) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.get_user_email_by_username(text) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Admin functions - ensure they check admin role
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.assign_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.remove_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.assign_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.remove_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Note: The linter will still warn about functions callable by signed-in users 
 -- if they are SECURITY DEFINER. This is expected for APIs that need elevated 
@@ -1534,8 +1534,8 @@ SET points_balance = COALESCE((
 ), 0);
 
 -- Revoke public execute on the trigger function
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_user_points_balance() FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_user_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_user_points_balance() FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_user_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260819210209_13653cf0-d021-485b-a5ca-5033d0db6e4e.sql
@@ -1565,13 +1565,13 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.lookup_login_email(TEXT) FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(TEXT) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(TEXT) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260819210231_19c90a20-f589-4037-93a3-e7f11ef325a9.sql
 -- =============================================
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_user_points_balance() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_user_points_balance() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260819232540_bdc202be-25a1-4591-b17b-0e187ad4eaab.sql
@@ -1890,14 +1890,14 @@ CREATE TRIGGER on_profile_referral_reward
 -- Revoke public execution for handle_new_user
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Revoke public execution for reward_referrer_on_signup
 REVOKE ALL ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.reward_referrer_on_signup() FROM authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -1958,10 +1958,10 @@ $$;
 -- 4. Set permissions
 REVOKE ALL ON FUNCTION public.check_referral_code(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.claim_welcome_bonus(UUID) FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(TEXT) TO authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(TEXT) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(TEXT) TO authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(TEXT) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -2137,8 +2137,8 @@ CREATE TRIGGER on_profile_referral_reward
 
 -- Ensure proper permissions
 REVOKE ALL ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -2303,8 +2303,8 @@ END;
 $$;
 
 -- 3. Grants
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 GRANT SELECT ON public.profiles TO anon, authenticated;
 GRANT INSERT ON public.points_transactions TO authenticated;
 GRANT INSERT ON public.referrals TO authenticated;
@@ -2317,14 +2317,14 @@ GRANT INSERT ON public.referrals TO authenticated;
 -- Revoke public execution for handle_new_user
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Revoke public execution for reward_referrer_on_signup
 REVOKE ALL ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.reward_referrer_on_signup() FROM authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -2333,29 +2333,29 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup
 
 -- Internal Triggers (should only be executable by system)
 REVOKE ALL ON FUNCTION public.notify_on_points_transaction() FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.update_points_balance_on_task_status_change() FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.log_task_status_change() FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_task_status_change() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_task_status_change() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.handle_admin_audit_log() FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.log_user_task_activity() FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_user_task_activity() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_user_task_activity() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.update_user_points_balance() FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_user_points_balance() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_user_points_balance() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Admin-only functions (checked via has_role, but limiting execution is safer)
 REVOKE ALL ON FUNCTION public.assign_role(UUID, public.app_role) FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(UUID, public.app_role) TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(UUID, public.app_role) TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.remove_role(UUID, public.app_role) FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(UUID, public.app_role) TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(UUID, public.app_role) TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -2503,19 +2503,19 @@ $$;
 -- =============================================
 
 -- Secure the check_referral_code function
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(text, uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(text, uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- System triggers
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Reward function
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -2698,34 +2698,34 @@ REVOKE ALL ON FUNCTION public.check_referral_code(text) FROM PUBLIC, anon, authe
 DROP FUNCTION IF EXISTS public.check_referral_code(text);
 
 REVOKE ALL ON FUNCTION public.check_referral_code(text, uuid) FROM PUBLIC, anon, authenticated;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.lookup_login_email(text) FROM PUBLIC, anon, authenticated;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.increment_referral_clicks(text) FROM PUBLIC, anon, authenticated;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.has_role(uuid, app_role) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.claim_welcome_bonus(uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.submit_task(uuid, uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.assign_role(uuid, app_role) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.remove_role(uuid, app_role) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.redeem_reward(uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -2760,7 +2760,7 @@ $$;
 
 -- 2. Revoke and Grant for the new RPC
 REVOKE ALL ON FUNCTION public.admin_adjust_points(uuid, integer, text, text) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.admin_adjust_points(uuid, integer, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.admin_adjust_points(uuid, integer, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 3. Ensure proper GRANTs on redemptions and points_transactions
 -- These are often missing or dropped in previous migrations
@@ -2943,10 +2943,10 @@ $function$;
 -- Secure the claim_welcome_bonus function to only be executable by authenticated users
 -- and revoke public access to prevent potential abuse.
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260820020756_fix_redemptions_profiles_relationship.sql
@@ -3063,8 +3063,8 @@ END;
 $$;
 
 -- Grant execute to authenticated users (role check inside function handles security)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(UUID, TEXT) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(UUID, TEXT) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(UUID, TEXT) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(UUID, TEXT) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -3072,20 +3072,20 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status
 -- =============================================
 
 -- Revoke EXECUTE from PUBLIC and anon for sensitive functions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(UUID, TEXT) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(UUID, UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.redeem_reward(UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(UUID, TEXT) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(UUID, UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.redeem_reward(UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Re-grant to specific roles
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(UUID, TEXT) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(UUID, UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(UUID, TEXT) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(UUID, UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -3093,18 +3093,18 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(UUID) TO au
 -- =============================================
 
 -- Revoke EXECUTE from PUBLIC and anon for remaining sensitive functions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.lookup_login_email(TEXT) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(TEXT, UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(UUID, public.app_role) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(UUID, public.app_role) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.lookup_login_email(TEXT) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(TEXT, UUID) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(UUID, public.app_role) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(UUID, public.app_role) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Re-grant to authenticated roles
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(TEXT) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(TEXT, UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(UUID, public.app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(UUID, public.app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(TEXT) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(TEXT) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(TEXT, UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(UUID, public.app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(UUID, public.app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -3208,17 +3208,17 @@ BEGIN
     );
 END;
 $function$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
 -- Migration: 20260820024049_e970dcd4-69b8-427b-9b2a-fdcbf59f412b.sql
 -- =============================================
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -3226,8 +3226,8 @@ DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_statu
 -- =============================================
 
 DROP FUNCTION IF EXISTS public.process_redemption_status_change(uuid, text);
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -3310,8 +3310,8 @@ BEGIN
 END;
 $function$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -3403,8 +3403,8 @@ $$;
 
 -- Explicitly grant permissions
 REVOKE ALL ON FUNCTION public.process_redemption_status_change(uuid, text, text) FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260820024705_c78f8bd3-583d-4cbc-9020-178efdaf9b7f.sql
@@ -3544,13 +3544,13 @@ $$;
 
 -- Fix security linter warnings for record_video_watch
 REVOKE ALL ON FUNCTION public.record_video_watch(uuid, uuid) FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Also fix security linter warnings for submit_task (detected in previous linter output)
 REVOKE ALL ON FUNCTION public.submit_task(uuid, uuid) FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -3587,8 +3587,8 @@ END;
 $$;
 
 -- Explicitly grant execute permission
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260820043528_ceb90909-dfa4-4967-9886-67581dcc4a3f.sql
@@ -3707,8 +3707,8 @@ $$;
 
 -- Ensure permissions are correctly set
 REVOKE ALL ON FUNCTION public.record_video_watch(uuid, uuid) FROM PUBLIC;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -4452,21 +4452,21 @@ $$;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 
 -- Revoke from existing functions specifically mentioned by linter or likely candidates
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_updated_at_column() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(TEXT, UUID) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_updated_at_column() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(TEXT, UUID) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Grant execute back to authenticated users for functions they need
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(TEXT, UUID) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(UUID, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(UUID) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(TEXT, UUID) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Ensure all functions have search_path set
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.notify_on_points_transaction() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.update_updated_at_column() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.check_referral_code(TEXT, UUID) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.notify_on_points_transaction() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.update_updated_at_column() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.check_referral_code(TEXT, UUID) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -4535,39 +4535,39 @@ WITH CHECK (public.has_role(auth.uid(), 'admin'));
 -- These will only be callable by service_role or specifically granted roles (handled in handler/middleware)
 
 -- Functions meant for public access (auth, signup, etc.)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Admin functions (should only be callable if the user has admin role)
 -- But DB-level EXECUTE grant is usually for the role, then the function body checks has_role.
 -- Let's restrict EXECUTE to authenticated and rely on internal has_role checks for the body.
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(uuid, app_role) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(uuid, app_role) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(uuid, app_role) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(uuid, app_role) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- User functions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Ensure internal/trigger functions are NOT executable by anyone but owner/service_role
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.log_task_status_change() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.log_user_task_activity() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.guard_profile_sensitive_columns() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_user_points_balance() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.log_task_status_change() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.log_user_task_activity() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.guard_profile_sensitive_columns() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_user_points_balance() FROM public, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -4576,16 +4576,16 @@ DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_user_points_balan
 
 
 -- Fix excessive function permissions identified by the security linter
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(text, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(text, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Ensure these functions are strictly authenticated
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Revoke all on generic helper functions from public access
 REVOKE ALL ON FUNCTION public.update_updated_at_column() FROM public, anon, authenticated;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_updated_at_column() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_updated_at_column() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -4594,17 +4594,17 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_updated_at_column(
 
 
 -- Final security hardening: Fix remaining excessive function permissions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.redeem_reward(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.redeem_reward(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -4638,14 +4638,14 @@ USING (auth.uid() = user_id)
 WITH CHECK (auth.uid() = user_id);
 
 -- 5. Tighten EXECUTE on SECURITY DEFINER functions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.lookup_login_email(text) FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(text, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.redeem_reward(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.lookup_login_email(text) FROM authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(text, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.redeem_reward(uuid) FROM anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 6. claim_welcome_bonus must only run for the caller
 CREATE OR REPLACE FUNCTION public.claim_welcome_bonus(_user_id uuid)
@@ -4736,22 +4736,22 @@ BEGIN
 END;
 $function$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260821010927_28c95624-ce42-4ce2-ba6f-6ca0998d644c.sql
 -- =============================================
 
 -- Restore execution permissions for core functions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Fix Admin access to app_settings
 DROP POLICY IF EXISTS "Admins can read all settings" ON public.app_settings;
@@ -4775,7 +4775,7 @@ GRANT SELECT ON public.user_roles TO authenticated, service_role;
 -- =============================================
 
 -- Restore access to referral validation for anonymous users (needed during signup)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Ensure handle_new_user trigger correctly handles metadata
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -4870,14 +4870,14 @@ ALTER VIEW public.user_ranks SET (security_invoker = on);
 ALTER VIEW public.my_referrals_detailed SET (security_invoker = on);
 
 -- Audit functions for excessive permissions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.notify_on_points_transaction() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -5085,20 +5085,20 @@ GRANT ALL ON public.points_transactions TO service_role;
 -- Security Hardening for new referral functions
 
 -- Revoke execute on new functions from public
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(UUID) FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(UUID) FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Grant execute to relevant roles
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(UUID) TO authenticated, service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(UUID) TO authenticated, service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role, postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Re-set search_path to be extra safe
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.reward_referrer_on_signup() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.is_profile_complete(UUID) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.check_pending_referrals_on_update() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.sync_points_balance() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.reward_referrer_on_signup() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.is_profile_complete(UUID) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.check_pending_referrals_on_update() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.sync_points_balance() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -5109,27 +5109,27 @@ DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.sync_points_balance() SET search_pat
 -- This addresses the 0028_anon_security_definer_function_executable and 0029_authenticated_security_definer_function_executable warnings
 
 -- Revoke from PUBLIC (both anon and authenticated)
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_updated_at_column() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(UUID, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_updated_at_column() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(UUID, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Re-grant to specific roles where needed
 -- has_role is used in RLS policies, so it needs to be executable by authenticated users
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(UUID, app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(UUID, app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- trigger functions only need to be executable by service_role/postgres
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_updated_at_column() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_updated_at_column() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- is_profile_complete is used by the trigger, but also by the client for UI logic
 -- Grant execute to authenticated users for UI checks
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(UUID) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -5141,40 +5141,40 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(UUID)
 ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
 
 -- Revoke execute from PUBLIC for existing SECURITY DEFINER functions with correct signatures
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_updated_at_column() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(text, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.lookup_login_email(text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(uuid, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(uuid, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.reward_referrer_on_signup() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.update_updated_at_column() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_role(uuid, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_referral_code(text, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.lookup_login_email(text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(uuid, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(uuid, app_role) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_admin_audit_log() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Re-grant specific permissions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Administrative functions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Trigger/Internal functions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_updated_at_column() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_updated_at_column() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -5197,36 +5197,36 @@ BEGIN
 END $$;
 
 -- 2. Explicitly re-grant execution only to specific roles for necessary functions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 3. Re-grant trigger/admin functions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_updated_at_column() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_updated_at_column() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 4. Set search_path for all security definer functions
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.reward_referrer_on_signup() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.check_pending_referrals_on_update() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.sync_points_balance() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.has_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.claim_welcome_bonus(uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.check_referral_code(text, uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.lookup_login_email(text) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.assign_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.remove_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_admin_audit_log() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.claim_daily_reward(uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.reward_referrer_on_signup() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.check_pending_referrals_on_update() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.sync_points_balance() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.has_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.claim_welcome_bonus(uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.check_referral_code(text, uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.lookup_login_email(text) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.assign_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.remove_role(uuid, app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_admin_audit_log() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.claim_daily_reward(uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -5235,29 +5235,29 @@ DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.claim_daily_reward(uuid) SET search_
 
 -- Precise revocation based on verified signatures
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance() FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.redeem_reward(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.redeem_reward(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Re-granting lookup functions that MUST be anon for the app to work
 -- (Linter will still flag these as warnings, but they are required)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -5281,9 +5281,9 @@ BEGIN
 END $$;
 
 -- Verify RLS and grants for the new logic
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -5457,19 +5457,19 @@ BEGIN
 END $$;
 
 -- Selectively grant back only what is needed for authenticated users
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Allow anon to lookup emails (for login) and increment clicks (public referral links)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Ensure service_role has all permissions
 GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO service_role;
@@ -5499,10 +5499,10 @@ WITH CHECK (user_id IS NULL);
 -- Revoke execute from anon/authenticated for internal triggers and sync functions
 -- These should only be executable by the system (service_role) or via triggers
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance_trigger() FROM anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance() FROM anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(uuid) FROM anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance_trigger() FROM anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.check_pending_referrals_on_update() FROM anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance() FROM anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(uuid) FROM anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Keep grants only where necessary for app functionality
 -- lookup_login_email is needed for login (anon)
@@ -5569,26 +5569,26 @@ END $$;
 
 -- 2. Selectively grant execution back to appropriate roles
 -- Public/Auth functions for core features
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Auth-only functions for user actions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Admin-only functions
 -- These will be checked via internal logic (like has_role) but we grant execute to authenticated
 -- so the Data API can call them, then the function body enforces the admin check.
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -5690,40 +5690,40 @@ GRANT SELECT ON public.my_referrals_detailed TO authenticated;
 REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public FROM PUBLIC;
 
 -- 2. Grant EXECUTE to 'anon' for functions required during pre-auth/sign-up
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 3. Grant EXECUTE to 'authenticated' for user-facing actions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 4. Admin functions (explicitly grant only to authenticated, but has_role check is inside)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 5. Trigger functions (grant to service_role)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_task_status_change() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_user_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.guard_profile_sensitive_columns() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_user_task_activity() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance_trigger() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.notify_on_points_transaction() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_task_status_change() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_pending_referrals_on_update() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_user_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.guard_profile_sensitive_columns() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_user_task_activity() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance_trigger() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_audit_log() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.reward_referrer_on_signup() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -5924,13 +5924,13 @@ CREATE TRIGGER on_task_submission_activity
 
 -- 5. Final permissions check
 REVOKE ALL ON FUNCTION public.update_points_balance_on_task_status_change() FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.update_points_balance_on_task_status_change() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.log_task_status_change() FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_task_status_change() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_task_status_change() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.log_user_task_activity() FROM PUBLIC, authenticated, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_user_task_activity() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.log_user_task_activity() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 6. Update submit_task to NOT manually insert points
 CREATE OR REPLACE FUNCTION public.submit_task(_user_id uuid, _task_id uuid)
@@ -6114,8 +6114,8 @@ CREATE TRIGGER sync_balance_on_transaction
 DROP TRIGGER IF EXISTS on_points_transaction_change ON public.points_transactions;
 
 -- 5. Ensure permissions
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance(uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance_trigger() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance(uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance_trigger() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -6227,7 +6227,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.has_completed_social_profile(uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_completed_social_profile(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_completed_social_profile(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 CREATE OR REPLACE FUNCTION public.submit_task(_user_id uuid, _task_id uuid)
  RETURNS json
@@ -6489,9 +6489,9 @@ END;
 $function$;
 
 -- Ensure proper permissions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) FROM PUBLIC, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -6574,8 +6574,8 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 6. Update Task Reward logic to handle referral bonus
 CREATE OR REPLACE FUNCTION public.handle_referral_reward_on_first_task()
@@ -6644,7 +6644,7 @@ CREATE TRIGGER tr_handle_referral_reward_on_first_task
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_referral_reward_on_first_task();
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 7. Clean up old triggers that might conflict
 DROP TRIGGER IF EXISTS on_profile_referral_reward ON public.profiles;
@@ -6860,7 +6860,7 @@ BEGIN
 END;
 $$;
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -7186,12 +7186,12 @@ $$;
 -- Revoke EXECUTE from public/anon/authenticated on SECURITY DEFINER functions
 -- that should only be called by system triggers.
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Ensure service_role can still execute them (though triggers usually run as owner)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260821180000_add_notification_metadata.sql
@@ -7347,12 +7347,12 @@ $$;
 -- Revoke EXECUTE from public/anon/authenticated on SECURITY DEFINER functions
 -- that should only be called by system triggers.
 
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Ensure service_role can still execute them (though triggers usually run as owner)
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -7650,19 +7650,19 @@ END;
 $function$;
 
 REVOKE ALL ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 2) Lock down role-management RPCs: app manages roles via the verified admin server function only
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(uuid, public.app_role) FROM authenticated, anon, PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(uuid, public.app_role) FROM authenticated, anon, PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, public.app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, public.app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.assign_role(uuid, public.app_role) FROM authenticated, anon, PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.remove_role(uuid, public.app_role) FROM authenticated, anon, PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.assign_role(uuid, public.app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.remove_role(uuid, public.app_role) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 3) Revoke direct client execution of internal-only functions
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_completed_social_profile(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.sync_points_balance(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.is_profile_complete(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.has_completed_social_profile(uuid) FROM PUBLIC, anon, authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 4) Verified video-watch sessions (private; only definer RPCs manage rows)
 CREATE TABLE IF NOT EXISTS public.video_watch_sessions (
@@ -7722,8 +7722,8 @@ END;
 $function$;
 
 REVOKE ALL ON FUNCTION public.start_video_watch_session(uuid, uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.start_video_watch_session(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.start_video_watch_session(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.start_video_watch_session(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.start_video_watch_session(uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 5) record_video_watch now requires a valid single-use watch session with server-enforced minimum duration
 DROP FUNCTION IF EXISTS public.record_video_watch(uuid, uuid);
@@ -7824,8 +7824,8 @@ END;
 $function$;
 
 REVOKE ALL ON FUNCTION public.record_video_watch(uuid, uuid, uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260823020237_959a522b-0d1f-46c0-8909-7ed0f296b8e5.sql
@@ -8020,37 +8020,37 @@ GRANT SELECT ON public.user_daily_task_counts TO service_role;
 -- and revoking public execute where appropriate.
 
 -- 1. has_role(uuid, public.app_role)
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.has_role(uuid, public.app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.has_role(uuid, public.app_role) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 2. handle_new_user()
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public, auth'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_new_user() SET search_path = public, auth'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 3. claim_daily_reward(uuid)
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.claim_daily_reward(uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.claim_daily_reward(uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.claim_daily_reward(uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 4. verify_task_submission(uuid, boolean, text)
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.verify_task_submission(uuid, boolean, text) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.verify_task_submission(uuid, boolean, text) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 5. submit_task(uuid, uuid)
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.submit_task(uuid, uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.submit_task(uuid, uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.submit_task(uuid, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 6. record_video_watch(uuid, uuid, uuid)
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.record_video_watch(uuid, uuid, uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.record_video_watch(uuid, uuid, uuid) SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'REVOKE EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) FROM PUBLIC'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 7. handle_task_status_notification()
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_task_status_notification() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_task_status_notification() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 8. referral-related trigger functions
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.check_pending_referrals_on_update() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_referral_reward_on_first_task() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.check_pending_referrals_on_update() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.handle_referral_reward_on_first_task() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 9. Fix the notifications insert policy mentioned in linter
 DROP POLICY IF EXISTS "System can insert notifications" ON public.notifications;
@@ -8142,10 +8142,10 @@ AS $$
   GROUP BY 1, 2;
 $$;
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -8203,10 +8203,10 @@ AS $$
   GROUP BY 1, 2;
 $$;
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -8246,8 +8246,8 @@ END;
 $$;
 
 -- Ensure grants are correct for the new signature
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, text, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, text, uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -8333,7 +8333,7 @@ END;
 $$;
 
 -- Grant EXECUTE to authenticated users for admin processing
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -8341,7 +8341,7 @@ DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.verify_task_submission(uu
 -- =============================================
 
 -- 1. Fix mutable search_path on the task submission notification trigger
-DO $\$ BEGIN EXECUTE 'ALTER FUNCTION public.notify_on_task_submission() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'ALTER FUNCTION public.notify_on_task_submission() SET search_path = public'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- 2. Make analytics views run with the querying user's permissions (security invoker)
 ALTER VIEW public.daily_task_completions SET (security_invoker = true);
@@ -8390,7 +8390,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.send_user_notification(uuid, text, text, text, jsonb) FROM public, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.send_user_notification(uuid, text, text, text, jsonb) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.send_user_notification(uuid, text, text, text, jsonb) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- Remove the permissive policy that let any user insert notifications for anyone
 DROP POLICY IF EXISTS "Users can insert notifications for others during system actions" ON public.notifications;
@@ -8725,7 +8725,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 CREATE OR REPLACE FUNCTION public.handle_referral_reward_on_first_task()
 RETURNS trigger
@@ -8811,7 +8811,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.handle_referral_reward_on_first_task() FROM PUBLIC, anon, authenticated;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() TO postgres, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_referral_reward_on_first_task() TO postgres, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 DROP TRIGGER IF EXISTS on_task_verified_referral ON public.task_submissions;
 DROP TRIGGER IF EXISTS tr_handle_referral_reward_on_first_task ON public.task_submissions;
@@ -8940,7 +8940,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$ BEGIN EXECUTE sql; END; $$;
 REVOKE ALL ON FUNCTION public._restore_exec(text) FROM PUBLIC, anon, authenticated, service_role;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public._restore_exec(text) TO sandbox_exec'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public._restore_exec(text) TO sandbox_exec'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260826231533_f8b8ef03-c7d4-4549-8c77-dabbed9c3d72.sql
@@ -9007,7 +9007,7 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION public.redeem_reward(uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 CREATE OR REPLACE FUNCTION public.send_user_notification(_user_id uuid, _title text, _message text, _type text)
 RETURNS jsonb
@@ -9027,7 +9027,7 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION public.send_user_notification(uuid, text, text, text) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.send_user_notification(uuid, text, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.send_user_notification(uuid, text, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 CREATE OR REPLACE FUNCTION public.handle_admin_points_adjustment(p_target_user_id uuid, p_amount integer, p_action_type text, p_reason text)
 RETURNS jsonb
@@ -9054,7 +9054,7 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260826233543_fa3488e1-77ed-4048-aae0-2e794c8b87e7.sql
@@ -9090,29 +9090,29 @@ BEGIN
   END LOOP;
 END $$;
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.start_video_watch_session(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.send_user_notification(uuid, text, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.send_user_notification(uuid, text, text, text, jsonb) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.admin_adjust_points(uuid, integer, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_completed_social_profile(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_daily_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.claim_welcome_bonus(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.start_video_watch_session(uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.send_user_notification(uuid, text, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.send_user_notification(uuid, text, text, text, jsonb) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.process_redemption_status_change(uuid, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.admin_adjust_points(uuid, integer, text, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.has_completed_social_profile(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance(uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.increment_referral_clicks(text) TO authenticated, anon'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260826233624_864c471a-d6ff-49f8-8737-def3aacc98db.sql
@@ -9196,7 +9196,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.verify_task_submission(uuid, boolean, text) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 CREATE OR REPLACE FUNCTION public.handle_admin_points_adjustment(
   p_target_user_id uuid,
@@ -9246,7 +9246,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 ALTER TABLE public.admin_audit_logs DROP CONSTRAINT IF EXISTS admin_audit_logs_action_type_check;
 ALTER TABLE public.admin_audit_logs ADD CONSTRAINT admin_audit_logs_action_type_check CHECK (
@@ -9322,11 +9322,11 @@ REVOKE ALL ON FUNCTION public.get_daily_task_completions(timestamp with time zon
 REVOKE ALL ON FUNCTION public.get_repeatable_task_stats(timestamp with time zone, timestamp with time zone) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.get_daily_task_completions(timestamp with time zone, timestamp with time zone, text, uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.get_repeatable_task_stats(timestamp with time zone, timestamp with time zone, uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamp with time zone, timestamp with time zone, text, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamp with time zone, timestamp with time zone, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamp with time zone, timestamp with time zone, text, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamp with time zone, timestamp with time zone, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 REVOKE ALL ON FUNCTION public.sync_points_balance(uuid) FROM PUBLIC, anon, authenticated;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance(uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.sync_points_balance(uuid) TO service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 INSERT INTO public.app_settings (key, value, description)
 VALUES ('daily_task_limit', '10'::jsonb, 'Maximum tasks a user may complete per day')
@@ -9458,7 +9458,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.verify_task_submission(uuid, boolean, text) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.verify_task_submission(uuid, boolean, text) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260827005239_563fb6c0-6ba8-4910-b1d8-4f8355145544.sql
@@ -9585,7 +9585,7 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.submit_task(uuid, uuid) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.submit_task(uuid, uuid) TO authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260827005845_58432429-2a41-4768-bea4-574e158f5271.sql
@@ -9753,7 +9753,7 @@ END;
 $function$;
 
 REVOKE ALL ON FUNCTION public.admin_revoke_task_submission(uuid, text) FROM PUBLIC, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.admin_revoke_task_submission(uuid, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.admin_revoke_task_submission(uuid, text) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260828185210_5c1dde20-b2ee-484c-97a8-b1225226bf38.sql
@@ -9831,9 +9831,9 @@ END;
 $function$;
 
 REVOKE ALL ON FUNCTION public.get_funnel_stats(timestamptz, timestamptz) FROM public, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_funnel_stats(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_funnel_stats(timestamptz, timestamptz) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_daily_task_completions(timestamptz, timestamptz, text, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_repeatable_task_stats(timestamptz, timestamptz, uuid) TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -9855,7 +9855,7 @@ BEGIN
 END;
 $$;
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_username_available(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_username_available(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -9907,9 +9907,9 @@ BEGIN
 END;
 $$;
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_username_available(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_username_available(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.lookup_login_email(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 
 -- =============================================
@@ -9930,7 +9930,7 @@ AS $$
 $$;
 
 REVOKE ALL ON FUNCTION public.check_username_available(text) FROM public;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_username_available(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_username_available(text) TO anon, authenticated, service_role'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260829052726_af6e18cc-2108-407f-b488-e35207c39c12.sql
@@ -9963,7 +9963,7 @@ $function$;
 -- Migration: 20260829052736_47e79e31-10b0-40fd-860f-3f03d6db715a.sql
 -- =============================================
 
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role, sandbox_exec'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO anon, authenticated, service_role, sandbox_exec'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260829053743_a8e7337d-a402-42e9-b960-06834b4f4b23.sql
@@ -10036,7 +10036,7 @@ AS $$
 $$;
 
 REVOKE ALL ON FUNCTION public.get_my_referees() FROM public, anon;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_my_referees() TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public.get_my_referees() TO authenticated'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260829122316_b5016487-0385-4413-8c0e-c0957ecea5db.sql
@@ -10069,7 +10069,7 @@ BEGIN
 END;
 $$;
 REVOKE ALL ON FUNCTION public._rebuild_exec(text) FROM PUBLIC, anon, authenticated, service_role;
-DO $\$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public._rebuild_exec(text) TO sandbox_exec'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $\$;
+DO $$ BEGIN EXECUTE 'GRANT EXECUTE ON FUNCTION public._rebuild_exec(text) TO sandbox_exec'; EXCEPTION WHEN undefined_function OR undefined_object THEN NULL; END $$;
 
 -- =============================================
 -- Migration: 20260831123738_ba5119e6-e02d-4bab-b4ed-6cb7a99a8afe.sql
