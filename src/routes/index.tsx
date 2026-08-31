@@ -53,10 +53,15 @@ export const Route = createFileRoute("/")({
   validateSearch: (search) => z.object({ ref: z.string().optional() }).parse(search),
   beforeLoad: async ({ search }) => {
     if (search.ref) throw redirect({ to: "/auth", search: { mode: "signup", ref: search.ref } });
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (session) throw redirect({ to: "/dashboard" });
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) throw redirect({ to: "/dashboard" });
+    } catch (e: any) {
+      if (e?.to || e?.isRedirect || e?.status) throw e;
+      // Proceed to landing page on session fetch error
+    }
   },
   component: LandingPage,
 });
