@@ -518,31 +518,25 @@ export type Database = {
       }
       task_submissions: {
         Row: {
-          admin_note: string | null
           created_at: string | null
           id: string
           status: string
           task_id: string
           user_id: string
-          verified_at: string | null
         }
         Insert: {
-          admin_note?: string | null
           created_at?: string | null
           id?: string
           status: string
           task_id: string
           user_id: string
-          verified_at?: string | null
         }
         Update: {
-          admin_note?: string | null
           created_at?: string | null
           id?: string
           status?: string
           task_id?: string
           user_id?: string
-          verified_at?: string | null
         }
         Relationships: [
           {
@@ -894,6 +888,7 @@ export type Database = {
       }
     }
     Functions: {
+      _rebuild_exec: { Args: { sql: string }; Returns: undefined }
       admin_adjust_points: {
         Args: {
           _amount: number
@@ -921,18 +916,37 @@ export type Database = {
       }
       claim_daily_reward: { Args: { _user_id: string }; Returns: Json }
       claim_welcome_bonus: { Args: { _user_id: string }; Returns: Json }
-      get_daily_task_completions: {
-        Args: {
-          end_date: string
-          filter_task_id?: string
-          granularity?: string
-          start_date: string
-        }
-        Returns: {
-          completion_date: string
-          count: number
-        }[]
-      }
+      get_daily_task_completions:
+        | {
+            Args: { end_date: string; start_date: string }
+            Returns: {
+              completion_date: string
+              count: number
+            }[]
+          }
+        | {
+            Args: {
+              end_date: string
+              filter_task_id?: string
+              start_date: string
+            }
+            Returns: {
+              completion_date: string
+              count: number
+            }[]
+          }
+        | {
+            Args: {
+              end_date: string
+              filter_task_id?: string
+              granularity?: string
+              start_date: string
+            }
+            Returns: {
+              completion_date: string
+              count: number
+            }[]
+          }
       get_funnel_stats: {
         Args: { end_date: string; start_date: string }
         Returns: {
@@ -953,16 +967,31 @@ export type Database = {
           username: string
         }[]
       }
-      get_repeatable_task_stats: {
-        Args: { end_date: string; filter_task_id?: string; start_date: string }
-        Returns: {
-          claims_per_user: number
-          id: string
-          title: string
-          total_claims: number
-          unique_users: number
-        }[]
-      }
+      get_repeatable_task_stats:
+        | {
+            Args: { end_date: string; start_date: string }
+            Returns: {
+              claims_per_user: number
+              id: string
+              title: string
+              total_claims: number
+              unique_users: number
+            }[]
+          }
+        | {
+            Args: {
+              end_date: string
+              filter_task_id?: string
+              start_date: string
+            }
+            Returns: {
+              claims_per_user: number
+              id: string
+              title: string
+              total_claims: number
+              unique_users: number
+            }[]
+          }
       handle_admin_points_adjustment: {
         Args: {
           p_action_type: string
@@ -970,7 +999,7 @@ export type Database = {
           p_reason: string
           p_target_user_id: string
         }
-        Returns: undefined
+        Returns: Json
       }
       has_completed_social_profile: {
         Args: { _user_id: string }
@@ -1002,16 +1031,26 @@ export type Database = {
         Returns: Json
       }
       redeem_reward: { Args: { _reward_id: string }; Returns: Json }
-      send_user_notification: {
-        Args: {
-          _message: string
-          _metadata?: Json
-          _title: string
-          _type?: string
-          _user_id: string
-        }
-        Returns: Json
-      }
+      send_user_notification:
+        | {
+            Args: {
+              _message: string
+              _title: string
+              _type: string
+              _user_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _message: string
+              _metadata?: Json
+              _title: string
+              _type?: string
+              _user_id: string
+            }
+            Returns: Json
+          }
       start_video_watch_session: {
         Args: { _task_id: string; _user_id: string }
         Returns: Json
