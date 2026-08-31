@@ -482,6 +482,8 @@ body {
 }
 
 .auth-input {
+  text-align: left;
+  line-height: normal;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,

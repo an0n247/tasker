@@ -621,7 +621,7 @@ function AuthPage() {
 
   const fieldLabel = "text-xs sm:text-sm font-bold text-foreground";
   const fieldInput =
-    "auth-input h-10 sm:h-11 rounded-2xl border-border/70 bg-background px-3.5 sm:px-4 text-sm sm:text-base glass-card";
+    "auth-input h-10 sm:h-11 rounded-2xl border-border/70 bg-background px-3.5 sm:px-4 text-sm sm:text-base glass-card text-left leading-normal";
 
   return (
     <div className={cn(shellClass, "px-4 sm:px-6")}>
