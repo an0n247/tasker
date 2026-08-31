@@ -5,7 +5,7 @@ export const Route = createFileRoute("/api/public/dns-check")({
     handlers: {
       GET: async ({ request }) => {
         const url = new URL(request.url);
-        const domain = url.searchParams.get("domain") || "noblegain.bytsphere.buzz";
+        const domain = url.searchParams.get("domain") || "noblegain.name.ng";
 
         try {
           // In a real Worker environment, we might use a DoH API or similar
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/api/public/dns-check")({
 
           const isDetected = data.Answer?.some(
             (a: any) =>
-              a.data.includes("bytsphere.buzz") ||
+              a.data.includes("name.ng") ||
               a.data.includes("lovable.app") ||
               a.data.includes("qd.je"),
           );

@@ -6,7 +6,7 @@
 const GATEWAY_URL = "https://connector-gateway.lovable.dev/resend";
 
 /** Sender identity — must be a domain verified in Resend. */
-export const OTP_FROM = "Noble Gain <no-reply@noblegain.bytsphere.buzz>";
+export const OTP_FROM = "Noble Gain <no-reply@noblegain.name.ng>";
 
 export const OTP_TTL_MINUTES = 10;
 export const OTP_MAX_ATTEMPTS = 5;

@@ -109,7 +109,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     // Domain redirects disabled - site works independently on all URLs
   },
   head: () => {
-    const url = typeof window !== "undefined" ? window.location.origin : "https://noblegain.bytsphere.buzz";
+    const url = typeof window !== "undefined" ? window.location.origin : "https://noblegain.name.ng";
     const canonicalUrl = typeof window !== "undefined" ? `${url}${window.location.pathname}` : url;
 
     return {
