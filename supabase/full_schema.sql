@@ -1409,7 +1409,24 @@ CREATE POLICY "Admins can read analytics" ON public.analytics_events FOR SELECT 
 CREATE POLICY "Users can view own video progress" ON public.video_ad_progress FOR SELECT TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "Users can view own video sessions" ON public.video_watch_sessions FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
--- 7. Execute Grants for RPC Functions
+-- 7. Permissions & Grants
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO postgres, service_role;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO anon;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon;
+GRANT EXECUTE ON ALL ROUTINES IN SCHEMA public TO authenticated, anon;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO postgres, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO authenticated, anon;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON ROUTINES TO authenticated, anon;
+
+-- Execute Grants for Specific RPC Functions
 GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.check_username_available(text) TO authenticated, anon, service_role;
 GRANT EXECUTE ON FUNCTION public.check_referral_code(text, uuid) TO authenticated, anon, service_role;
