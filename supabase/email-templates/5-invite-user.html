@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>You've been invited to Noble Gain</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+      body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(180deg, #f7f4ee 0%, #f1efe9 100%);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+        color: #102026;
+      }
+
+      .wrapper {
+        width: 100%;
+        max-width: 600px;
+        margin: 32px auto;
+        background: #fffdf9;
+        border-radius: 26px;
+        overflow: hidden;
+        border: 1px solid rgba(16, 32, 38, 0.08);
+        box-shadow: 0 24px 50px rgba(34, 28, 15, 0.07);
+      }
+
+      .header {
+        padding: 26px 32px 18px;
+        background: radial-gradient(circle at top left, rgba(230, 193, 122, 0.28), transparent 38%),
+          linear-gradient(135deg, #0f2a30 0%, #183d45 52%, #0b1f26 100%);
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        color: #ffffff;
+        text-decoration: none;
+        text-transform: uppercase;
+      }
+
+      .brand-mark {
+        width: 13px;
+        height: 13px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #f9d791, #e6c17a);
+        box-shadow: 0 0 16px rgba(230, 193, 122, 0.7);
+        display: inline-block;
+      }
+
+      .content {
+        padding: 32px 32px 22px;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 800;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: #7a6a45;
+        margin-bottom: 14px;
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: 28px;
+        line-height: 1.15;
+        letter-spacing: -0.05em;
+        color: #102026;
+      }
+
+      p {
+        margin: 0 0 18px;
+        font-size: 15px;
+        line-height: 1.7;
+        color: rgba(16, 32, 38, 0.82);
+      }
+
+      .meta {
+        padding: 10px 32px 8px;
+      }
+
+      .cta {
+        display: inline-block;
+        background: linear-gradient(135deg, #e6c17a 0%, #d3ab59 100%);
+        color: #102026 !important;
+        text-decoration: none;
+        border-radius: 12px;
+        padding: 14px 28px;
+        font-weight: 800;
+        font-size: 15px;
+      }
+
+      .footer {
+        padding: 22px 32px 28px;
+        color: rgba(16, 32, 38, 0.62);
+        font-size: 12px;
+        text-align: center;
+      }
+
+      .links {
+        margin: 0 0 12px;
+      }
+
+      .links a {
+        color: #0f2a30;
+        text-decoration: none;
+        margin: 0 10px;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div class="header">
+        <a href="https://noblegain.name.ng" class="brand">
+          <span class="brand-mark"></span>
+          Noble Gain
+        </a>
+      </div>
+
+      <div class="content">
+        <div class="eyebrow">Exclusive Invitation</div>
+        <h1>You've been invited to join.</h1>
+        <p>
+          You have been invited to join Noble Gain — the transparent rewards community where you can turn your time into real earnings and prizes.
+        </p>
+        <p>
+          Click the button below to accept your invitation and activate your account:
+        </p>
+      </div>
+
+      <div class="meta">
+        <a class="cta" href="{{ .ConfirmationURL }}">Accept Invitation & Join</a>
+      </div>
+
+      <div class="footer">
+        <div class="links">
+          <a href="https://noblegain.name.ng">Home</a>
+          <a href="https://noblegain.name.ng/about">About</a>
+          <a href="https://noblegain.name.ng/privacy">Privacy</a>
+          <a href="https://noblegain.name.ng/terms">Terms</a>
+        </div>
+        © 2026 Noble Gain. Turn your time into real rewards.
+      </div>
+    </div>
+  </body>
+</html>
