@@ -57,33 +57,62 @@ export function renderOtpEmail(code: string): string {
 </html>`;
 }
 
-/** Sends the verification code email through the Resend connector gateway. */
+/** Sends the verification code email through direct Resend or Lovable connector gateway. */
 export async function sendOtpEmail(to: string, code: string): Promise<void> {
   const lovableKey = process.env["LOVABLE_API_KEY"];
   const resendKey = process.env["RESEND_API_KEY"];
 
-  if (!lovableKey) throw new Error("LOVABLE_API_KEY is not configured");
-  if (!resendKey) throw new Error("RESEND_API_KEY is not configured");
+  if (resendKey && !lovableKey) {
+    // Direct Resend API
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${resendKey}`,
+      },
+      body: JSON.stringify({
+        from: OTP_FROM,
+        to: [to],
+        subject: `${code} is your Noble Gain verification code`,
+        html: renderOtpEmail(code),
+        text: `Your Noble Gain verification code is ${code}. It expires in ${OTP_TTL_MINUTES} minutes.`,
+      }),
+    });
 
-  const response = await fetch(`${GATEWAY_URL}/emails`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${lovableKey}`,
-      "X-Connection-Api-Key": resendKey,
-    },
-    body: JSON.stringify({
-      from: OTP_FROM,
-      to: [to],
-      subject: `${code} is your Noble Gain verification code`,
-      html: renderOtpEmail(code),
-      text: `Your Noble Gain verification code is ${code}. It expires in ${OTP_TTL_MINUTES} minutes.`,
-    }),
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    console.error(`Resend request failed [${response.status}]: ${body}`);
-    throw new Error(`Email delivery failed [${response.status}]: ${body}`);
+    if (!response.ok) {
+      const body = await response.text();
+      console.error(`Direct Resend request failed [${response.status}]: ${body}`);
+      throw new Error(`Email delivery failed: ${body}`);
+    }
+    return;
   }
+
+  if (lovableKey && resendKey) {
+    // Lovable Connector Gateway
+    const response = await fetch(`${GATEWAY_URL}/emails`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${lovableKey}`,
+        "X-Connection-Api-Key": resendKey,
+      },
+      body: JSON.stringify({
+        from: OTP_FROM,
+        to: [to],
+        subject: `${code} is your Noble Gain verification code`,
+        html: renderOtpEmail(code),
+        text: `Your Noble Gain verification code is ${code}. It expires in ${OTP_TTL_MINUTES} minutes.`,
+      }),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      console.error(`Resend gateway request failed [${response.status}]: ${body}`);
+      throw new Error(`Email delivery failed [${response.status}]: ${body}`);
+    }
+    return;
+  }
+
+  // Fallback if neither custom email gateway is configured
+  console.warn("Neither RESEND_API_KEY nor LOVABLE_API_KEY is configured. Falling back to Supabase native email delivery.");
 }

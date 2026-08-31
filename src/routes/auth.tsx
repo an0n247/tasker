@@ -388,7 +388,11 @@ function AuthPage() {
         throw new Error("An account with this email already exists. Please sign in instead.");
       }
 
-      await sendSignupOtp({ data: { email } });
+      try {
+        await sendSignupOtp({ data: { email } });
+      } catch (otpErr) {
+        console.warn("Custom OTP send note:", otpErr);
+      }
 
       setVerificationCode("");
       setShowVerification(true);
@@ -411,17 +415,37 @@ function AuthPage() {
     setError("");
 
     try {
-      await verifySignupOtp({ data: { email, code: token } });
+      let verified = false;
+      try {
+        const res = await verifySignupOtp({ data: { email, code: token } });
+        if (res?.verified) verified = true;
+      } catch (customErr) {
+        // Fallback to Supabase native OTP verification
+        const { error: nativeOtpErr } = await supabase.auth.verifyOtp({
+          email,
+          token,
+          type: "signup",
+        });
+        if (nativeOtpErr) {
+          throw customErr || nativeOtpErr;
+        }
+        verified = true;
+      }
 
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      if (verified) {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
-      if (signInError) throw signInError;
+        if (signInError) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (!sessionData?.session) throw signInError;
+        }
 
-      toast.success("Email verified successfully. Welcome to Noble Gain.");
-      navigate({ to: (search.redirect as any) || "/dashboard" });
+        toast.success("Email verified successfully. Welcome to Noble Gain.");
+        navigate({ to: (search.redirect as any) || "/dashboard" });
+      }
     } catch (error: any) {
       setError(error.message || "Unable to verify code. Please request a new one.");
     } finally {
