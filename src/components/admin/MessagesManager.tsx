@@ -70,19 +70,33 @@ export function MessagesManager() {
   const { data: threads = [], isLoading } = useQuery({
     queryKey: ["admin-messages-threads"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: rawMessages, error } = await supabase
         .from("messages" as any)
-        .select(
-          `
-          *,
-          sender:sender_id (id, username, full_name, avatar_url, email),
-          recipient:recipient_id (id, username, full_name, avatar_url, email)
-        `,
-        )
+        .select("*")
         .is("parent_id", null)
         .order("updated_at", { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching admin messages:", error);
+        return [];
+      }
+
+      const msgs = (rawMessages || []) as any[];
+      if (msgs.length === 0) return [];
+
+      // Collect user IDs
+      const userIds = Array.from(
+        new Set(
+          msgs.flatMap((m: any) => [m.sender_id, m.recipient_id]).filter(Boolean)
+        )
+      );
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, email, avatar_url")
+        .in("id", userIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
       // Also get reply counts
       const { data: allReplies } = await supabase
@@ -95,8 +109,10 @@ export function MessagesManager() {
         replyCountMap.set(r.parent_id, (replyCountMap.get(r.parent_id) || 0) + 1);
       });
 
-      return (data || []).map((t: any) => ({
+      return msgs.map((t: any) => ({
         ...t,
+        sender: profileMap.get(t.sender_id) || { id: t.sender_id, username: "Admin", email: "" },
+        recipient: t.recipient_id ? profileMap.get(t.recipient_id) || null : null,
         replyCount: replyCountMap.get(t.id) || 0,
       }));
     },
@@ -125,32 +141,50 @@ export function MessagesManager() {
     queryFn: async () => {
       if (!activeSheetThreadId) return null;
 
-      const [{ data: root }, { data: replies }] = await Promise.all([
+      const [{ data: rootRaw }, { data: repliesRaw }] = await Promise.all([
         supabase
           .from("messages" as any)
-          .select(
-            `
-            *,
-            sender:sender_id (id, username, full_name, avatar_url, email),
-            recipient:recipient_id (id, username, full_name, avatar_url, email)
-          `,
-          )
+          .select("*")
           .eq("id", activeSheetThreadId)
-          .single(),
+          .maybeSingle(),
         supabase
           .from("messages" as any)
-          .select(
-            `
-            *,
-            sender:sender_id (id, username, full_name, avatar_url, email),
-            recipient:recipient_id (id, username, full_name, avatar_url, email)
-          `,
-          )
+          .select("*")
           .eq("parent_id", activeSheetThreadId)
           .order("created_at", { ascending: true }),
       ]);
 
-      return { root, replies: replies || [] };
+      if (!rootRaw) return null;
+
+      const root = rootRaw as any;
+      const replies = (repliesRaw || []) as any[];
+
+      const allUserIds = Array.from(
+        new Set(
+          [root.sender_id, root.recipient_id, ...replies.flatMap((r: any) => [r.sender_id, r.recipient_id])].filter(Boolean)
+        )
+      );
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, email, avatar_url")
+        .in("id", allUserIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+      const enrichedRoot = {
+        ...root,
+        sender: profileMap.get(root.sender_id) || { id: root.sender_id, username: "Admin", email: "" },
+        recipient: root.recipient_id ? profileMap.get(root.recipient_id) || null : null,
+      };
+
+      const enrichedReplies = replies.map((r: any) => ({
+        ...r,
+        sender: profileMap.get(r.sender_id) || { id: r.sender_id, username: "User", email: "" },
+        recipient: r.recipient_id ? profileMap.get(r.recipient_id) || null : null,
+      }));
+
+      return { root: enrichedRoot, replies: enrichedReplies };
     },
     enabled: !!activeSheetThreadId,
   });

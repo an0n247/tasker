@@ -643,26 +643,6 @@ export function Navigation() {
                     Profile
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  asChild
-                  className="rounded-xl focus:bg-ink-3 focus:text-gold cursor-pointer px-3 py-2 font-bold text-xs transition-colors"
-                >
-                  <Link
-                    to="/messages"
-                    className="flex items-center justify-between w-full"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <div className="flex items-center">
-                      <Mail className="mr-2.5 h-4 w-4" />
-                      Inbox & Messages
-                    </div>
-                    {unreadMessagesCount > 0 && (
-                      <Badge className="h-4 px-1.5 text-[9px] bg-gold text-ink font-bold border-none">
-                        {unreadMessagesCount}
-                      </Badge>
-                    )}
-                  </Link>
-                </DropdownMenuItem>
                 {isAdmin && (
                   <DropdownMenuItem
                     asChild
@@ -868,22 +848,6 @@ export function Navigation() {
                   <Link to="/profile" className="flex items-center w-full">
                     <User className="mr-2.5 h-4 w-4" strokeWidth={2} />
                     My Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  asChild
-                  className="rounded-xl focus:bg-ink-3 focus:text-gold cursor-pointer px-3 py-2 font-bold text-xs transition-colors"
-                >
-                  <Link to="/messages" className="flex items-center justify-between w-full">
-                    <div className="flex items-center">
-                      <Mail className="mr-2.5 h-4 w-4" strokeWidth={2} />
-                      Inbox & Messages
-                    </div>
-                    {unreadMessagesCount > 0 && (
-                      <Badge className="h-4 px-1.5 text-[9px] bg-gold text-ink font-bold border-none">
-                        {unreadMessagesCount}
-                      </Badge>
-                    )}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem

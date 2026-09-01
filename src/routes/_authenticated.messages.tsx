@@ -82,22 +82,33 @@ export function MessagesPage() {
       if (!user) return [];
 
       // Fetch all root messages (parent_id IS NULL) that the user is entitled to view
-      const { data, error } = await supabase
+      const { data: rawMessages, error } = await supabase
         .from("messages" as any)
-        .select(
-          `
-          *,
-          sender:sender_id (id, username, full_name, avatar_url),
-          recipient:recipient_id (id, username, full_name, avatar_url)
-        `,
-        )
+        .select("*")
         .is("parent_id", null)
         .order("updated_at", { ascending: false });
 
       if (error) {
         console.error("Error fetching messages:", error);
-        throw error;
+        return [];
       }
+
+      const msgs = (rawMessages || []) as any[];
+      if (msgs.length === 0) return [];
+
+      // Fetch sender & recipient profiles
+      const userIds = Array.from(
+        new Set(
+          msgs.flatMap((m: any) => [m.sender_id, m.recipient_id]).filter(Boolean)
+        )
+      );
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .in("id", userIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
       // Fetch message_reads for broadcasts
       const { data: reads } = await supabase
@@ -107,8 +118,10 @@ export function MessagesPage() {
 
       const readSet = new Set((reads || []).map((r: any) => r.message_id));
 
-      return (data || []).map((msg: any) => ({
+      return msgs.map((msg: any) => ({
         ...msg,
+        sender: profileMap.get(msg.sender_id) || { id: msg.sender_id, username: "Administration" },
+        recipient: msg.recipient_id ? profileMap.get(msg.recipient_id) || null : null,
         isReadForUser: msg.is_broadcast ? readSet.has(msg.id) : (msg.is_read || msg.sender_id === user.id),
       }));
     },
@@ -128,39 +141,54 @@ export function MessagesPage() {
     queryFn: async () => {
       if (!selectedThreadId) return null;
 
-      // 1. Fetch Root Message
-      const { data: root, error: rootErr } = await supabase
-        .from("messages" as any)
-        .select(
-          `
-          *,
-          sender:sender_id (id, username, full_name, avatar_url),
-          recipient:recipient_id (id, username, full_name, avatar_url)
-        `,
+      // 1. Fetch Root Message and Replies
+      const [{ data: rootRaw }, { data: repliesRaw }] = await Promise.all([
+        supabase
+          .from("messages" as any)
+          .select("*")
+          .eq("id", selectedThreadId)
+          .maybeSingle(),
+        supabase
+          .from("messages" as any)
+          .select("*")
+          .eq("parent_id", selectedThreadId)
+          .order("created_at", { ascending: true }),
+      ]);
+
+      if (!rootRaw) return null;
+
+      const root = rootRaw as any;
+      const replies = (repliesRaw || []) as any[];
+
+      // Collect all user IDs from root and replies
+      const allUserIds = Array.from(
+        new Set(
+          [root.sender_id, root.recipient_id, ...replies.flatMap((r: any) => [r.sender_id, r.recipient_id])].filter(Boolean)
         )
-        .eq("id", selectedThreadId)
-        .single();
+      );
 
-      if (rootErr || !root) return null;
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, full_name, avatar_url")
+        .in("id", allUserIds);
 
-      // 2. Fetch Replies
-      const { data: replies, error: repliesErr } = await supabase
-        .from("messages" as any)
-        .select(
-          `
-          *,
-          sender:sender_id (id, username, full_name, avatar_url),
-          recipient:recipient_id (id, username, full_name, avatar_url)
-        `,
-        )
-        .eq("parent_id", selectedThreadId)
-        .order("created_at", { ascending: true });
+      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
 
-      if (repliesErr) throw repliesErr;
+      const enrichedRoot = {
+        ...root,
+        sender: profileMap.get(root.sender_id) || { id: root.sender_id, username: "Administration" },
+        recipient: root.recipient_id ? profileMap.get(root.recipient_id) || null : null,
+      };
+
+      const enrichedReplies = replies.map((r: any) => ({
+        ...r,
+        sender: profileMap.get(r.sender_id) || { id: r.sender_id, username: "Member" },
+        recipient: r.recipient_id ? profileMap.get(r.recipient_id) || null : null,
+      }));
 
       return {
-        root,
-        replies: replies || [],
+        root: enrichedRoot,
+        replies: enrichedReplies,
       };
     },
     enabled: !!selectedThreadId,
