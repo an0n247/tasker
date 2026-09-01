@@ -21,12 +21,14 @@ import {
   CheckCircle2,
   Star,
   HelpCircle,
+  Mail,
 } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { NotificationsPopover } from "./NotificationsPopover";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -146,6 +148,60 @@ export function Navigation() {
     },
     enabled: !isAuthPage && !isLandingPage,
   });
+
+  const queryClient = useQueryClient();
+
+  const { data: unreadMessagesCount = 0 } = useQuery({
+    queryKey: ["unread-messages-count"],
+    queryFn: async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return 0;
+
+      const { data, error } = await supabase.rpc("get_unread_message_count");
+      if (error) {
+        console.error("Error fetching unread messages count:", error);
+        return 0;
+      }
+      return Number(data) || 0;
+    },
+    enabled: !isAuthPage && !isLandingPage,
+  });
+
+  useEffect(() => {
+    if (isAuthPage || isLandingPage) return;
+
+    const channel = supabase
+      .channel("nav-messages-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["unread-messages-count"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "message_reads",
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["unread-messages-count"] });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthPage, isLandingPage]);
 
   const isAdmin = authInfo?.isAdmin || false;
   const isModerator = authInfo?.isModerator || false;
@@ -332,7 +388,12 @@ export function Navigation() {
       items: [
         { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
         { name: "Earn Points", href: "/earn", icon: Coins },
-
+        {
+          name: "Messages",
+          href: "/messages",
+          icon: Mail,
+          badge: unreadMessagesCount,
+        },
         { name: "Redeem", href: "/redeem", icon: Gift },
         { name: "Referral", href: "/refer", icon: Share2 },
       ],
@@ -401,14 +462,28 @@ export function Navigation() {
                     {isActive && (
                       <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-gold" />
                     )}
-                    <item.icon
-                      className={cn(
-                        "h-4.5 w-4.5 transition-colors shrink-0",
-                        isActive ? "text-gold" : "text-ink-muted group-hover:text-ink-fg",
+                    <div className="relative shrink-0">
+                      <item.icon
+                        className={cn(
+                          "h-4.5 w-4.5 transition-colors",
+                          isActive ? "text-gold" : "text-ink-muted group-hover:text-ink-fg",
+                        )}
+                        strokeWidth={2}
+                      />
+                      {collapsed && Boolean(item.badge && item.badge > 0) && (
+                        <span className="absolute -top-1 -right-1 size-2 rounded-full bg-gold animate-pulse" />
                       )}
-                      strokeWidth={2}
-                    />
-                    {!collapsed && <span className="whitespace-nowrap">{item.name}</span>}
+                    </div>
+                    {!collapsed && (
+                      <span className="flex-1 flex items-center justify-between gap-2 overflow-hidden">
+                        <span className="whitespace-nowrap truncate">{item.name}</span>
+                        {Boolean(item.badge && item.badge > 0) && (
+                          <Badge className="h-4 px-1.5 text-[9px] bg-gold text-ink font-bold border-none shrink-0">
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -484,10 +559,19 @@ export function Navigation() {
       {/* Mobile Top Bar */}
       <div className="md:hidden fixed top-3 left-3 right-3 z-50 rgb-neon-wrapper">
         <div className="rgb-neon-inner flex items-center justify-between h-15 px-4 bg-ink border border-hairline ink-header-shadow">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-ink-muted hover:text-gold p-1"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open menu drawer"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
             <Link
               to="/dashboard"
-              className="flex items-center gap-2 font-black text-base tracking-[-0.03em] ml-1"
+              className="flex items-center gap-2 font-black text-base tracking-[-0.03em]"
             >
               <img src="/logo.png" alt="Noble Gain" className="h-7 w-7 object-contain" />
               <span className="leading-tight text-ink-fg">
@@ -497,6 +581,22 @@ export function Navigation() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="relative h-9 w-9 rounded-full text-ink-muted hover:text-gold hover:bg-ink-2 transition-colors cursor-pointer"
+              title="Official Inbox & Messages"
+            >
+              <Link to="/messages" aria-label="Messages">
+                <Mail className="h-4.5 w-4.5" />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-gold text-ink text-[10px] font-black flex items-center justify-center ring-2 ring-ink animate-pulse">
+                    {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
             <NotificationsPopover />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -541,6 +641,26 @@ export function Navigation() {
                   >
                     <User className="mr-2.5 h-4 w-4" />
                     Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  asChild
+                  className="rounded-xl focus:bg-ink-3 focus:text-gold cursor-pointer px-3 py-2 font-bold text-xs transition-colors"
+                >
+                  <Link
+                    to="/messages"
+                    className="flex items-center justify-between w-full"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <div className="flex items-center">
+                      <Mail className="mr-2.5 h-4 w-4" />
+                      Inbox & Messages
+                    </div>
+                    {unreadMessagesCount > 0 && (
+                      <Badge className="h-4 px-1.5 text-[9px] bg-gold text-ink font-bold border-none">
+                        {unreadMessagesCount}
+                      </Badge>
+                    )}
                   </Link>
                 </DropdownMenuItem>
                 {isAdmin && (
@@ -660,6 +780,7 @@ export function Navigation() {
               {location.pathname === "/earn" && "Earn Opportunities"}
               {location.pathname === "/refer" && "Referral Accelerator"}
               {location.pathname === "/redeem" && "Rewards Catalog"}
+              {location.pathname === "/messages" && "Official Inbox & Messages"}
               {location.pathname === "/profile" && "Account Profile"}
               {location.pathname === "/transactions" && "Points Ledger"}
               {location.pathname === "/settings" && "Account Settings"}
@@ -685,6 +806,22 @@ export function Navigation() {
             </div>
             <div className="h-6 w-[1px] bg-hairline mx-0.5" />
             <ThemeToggle />
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              className="relative h-9 w-9 rounded-full text-ink-muted hover:text-gold hover:bg-ink-2 transition-colors cursor-pointer"
+              title="Official Inbox & Messages"
+            >
+              <Link to="/messages" aria-label="Inbox & Messages">
+                <Mail className="h-4.5 w-4.5" />
+                {unreadMessagesCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-gold text-ink text-[10px] font-black flex items-center justify-center ring-2 ring-ink animate-pulse">
+                    {unreadMessagesCount > 9 ? "9+" : unreadMessagesCount}
+                  </span>
+                )}
+              </Link>
+            </Button>
             <NotificationsPopover />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -699,6 +836,9 @@ export function Navigation() {
                       <User className="h-4 w-4" />
                     </AvatarFallback>
                   </Avatar>
+                  {unreadMessagesCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-gold ring-2 ring-ink animate-pulse" />
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent
@@ -728,6 +868,22 @@ export function Navigation() {
                   <Link to="/profile" className="flex items-center w-full">
                     <User className="mr-2.5 h-4 w-4" strokeWidth={2} />
                     My Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  asChild
+                  className="rounded-xl focus:bg-ink-3 focus:text-gold cursor-pointer px-3 py-2 font-bold text-xs transition-colors"
+                >
+                  <Link to="/messages" className="flex items-center justify-between w-full">
+                    <div className="flex items-center">
+                      <Mail className="mr-2.5 h-4 w-4" strokeWidth={2} />
+                      Inbox & Messages
+                    </div>
+                    {unreadMessagesCount > 0 && (
+                      <Badge className="h-4 px-1.5 text-[9px] bg-gold text-ink font-bold border-none">
+                        {unreadMessagesCount}
+                      </Badge>
+                    )}
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem

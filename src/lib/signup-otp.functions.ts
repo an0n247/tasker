@@ -4,7 +4,7 @@ import { z } from "zod";
 const emailSchema = z.object({ email: z.string().email().max(320) });
 const verifySchema = z.object({
   email: z.string().email().max(320),
-  code: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code."),
+  code: z.string().trim().regex(/^\d{6,8}$/, "Enter the verification code."),
 });
 
 /**
@@ -41,18 +41,29 @@ export const sendSignupOtp = createServerFn({ method: "POST" })
       }
     }
 
+    let userId: string | null = null;
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("id")
-      .eq("email", email)
+      .ilike("email", email)
       .maybeSingle();
 
-    if (!profile?.id) {
+    if (profile?.id) {
+      userId = profile.id;
+    } else {
+      const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
+      const matched = usersData?.users?.find(
+        (u) => u.email?.toLowerCase() === email
+      );
+      if (matched) userId = matched.id;
+    }
+
+    if (!userId) {
       // Unknown account — stay neutral.
       return { sent: true, cooldown: 0 };
     }
 
-    const { data: userResult } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+    const { data: userResult } = await supabaseAdmin.auth.admin.getUserById(userId);
     if (userResult?.user?.email_confirmed_at) {
       return { sent: true, cooldown: 0 };
     }
@@ -115,15 +126,26 @@ export const verifySignupOtp = createServerFn({ method: "POST" })
       throw invalid;
     }
 
+    let targetUserId: string | null = null;
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("id")
-      .eq("email", email)
+      .ilike("email", email)
       .maybeSingle();
 
-    if (!profile?.id) throw invalid;
+    if (profile?.id) {
+      targetUserId = profile.id;
+    } else {
+      const { data: usersData } = await supabaseAdmin.auth.admin.listUsers();
+      const matched = usersData?.users?.find(
+        (u) => u.email?.toLowerCase() === email
+      );
+      if (matched) targetUserId = matched.id;
+    }
 
-    const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(profile.id, {
+    if (!targetUserId) throw invalid;
+
+    const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
       email_confirm: true,
     });
 

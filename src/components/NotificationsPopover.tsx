@@ -43,24 +43,31 @@ export function NotificationsPopover() {
       markAsRead.mutate(notification.id);
     }
 
-    // Priority 1: Deep links to referee details
+    // Priority 1: Deep links to message or conversation
+    if (notification.metadata?.message_id || notification.type === "message") {
+      navigate({
+        to: "/messages",
+        search: { messageId: notification.metadata?.message_id || undefined },
+      });
+      return;
+    }
+
+    // Priority 2: Deep links to referee details
     if (notification.metadata?.referee_id) {
       navigate({
         to: "/refer",
       });
-      // Small delay to allow navigation to finish if needed, though refer page usually scrolls to bottom
-      // or we can just navigate. In a real app we might pass a search param.
       return;
     }
 
-    // Priority 2: Transaction specific details
+    // Priority 3: Transaction specific details
     if (notification.transaction_id) {
       navigate({
         to: "/transactions",
         search: { transactionId: notification.transaction_id },
       });
     }
-    // Priority 3: General navigation
+    // Priority 4: General navigation
     else if (notification.type === "points" || notification.type === "reward") {
       navigate({ to: "/transactions" });
     }

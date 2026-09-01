@@ -112,9 +112,16 @@ function AuthPage() {
   const [verificationCode, setVerificationCode] = useState("");
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [showReset, setShowReset] = useState(false);
+  const [resetStep, setResetStep] = useState<"request" | "verify">("request");
   const [resetEmail, setResetEmail] = useState("");
+  const [resolvedResetEmail, setResolvedResetEmail] = useState("");
+  const [resetOtp, setResetOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
+  const [resendingResetOtp, setResendingResetOtp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [resending, setResending] = useState(false);
@@ -348,10 +355,71 @@ function AuthPage() {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        const errorMsg = (error.message || "").toLowerCase();
+        const isUnverified =
+          errorMsg.includes("not confirmed") ||
+          errorMsg.includes("not verified") ||
+          errorMsg.includes("unconfirmed") ||
+          errorMsg.includes("unverified") ||
+          errorMsg.includes("confirm your email") ||
+          errorMsg.includes("verify your email") ||
+          (error as any)?.code === "email_not_confirmed" ||
+          (error as any)?.code === "user_not_confirmed";
+
+        if (isUnverified) {
+          setEmail(loginEmail);
+          setShowVerification(true);
+          setVerificationCode("");
+          setError("");
+
+          // Trigger OTP send so user receives fresh code
+          try {
+            await sendSignupOtp({ data: { email: loginEmail } });
+          } catch (otpErr) {
+            console.warn("Custom OTP send note:", otpErr);
+          }
+
+          try {
+            await supabase.auth.resend({
+              type: "signup",
+              email: loginEmail,
+            });
+          } catch (nativeResendErr) {
+            console.warn("Supabase resend note:", nativeResendErr);
+          }
+
+          toast.info("Your email is not verified yet. We have opened the verification page and sent a code to your inbox.");
+          return;
+        }
+        throw error;
+      }
 
       navigate({ to: (search.redirect as any) || "/dashboard" });
     } catch (error: any) {
+      const errorMsg = (error.message || "").toLowerCase();
+      const isUnverified =
+        errorMsg.includes("not confirmed") ||
+        errorMsg.includes("not verified") ||
+        errorMsg.includes("unconfirmed") ||
+        errorMsg.includes("unverified") ||
+        errorMsg.includes("confirm your email") ||
+        errorMsg.includes("verify your email") ||
+        (error as any)?.code === "email_not_confirmed" ||
+        (error as any)?.code === "user_not_confirmed";
+
+      if (isUnverified) {
+        let fallbackEmail = identifier.trim();
+        if (fallbackEmail.includes("@")) {
+          setEmail(fallbackEmail);
+        }
+        setShowVerification(true);
+        setVerificationCode("");
+        setError("");
+        toast.info("Please enter the verification code sent to your email.");
+        return;
+      }
+
       setError(error.message);
     } finally {
       setLoading(false);
@@ -406,8 +474,8 @@ function AuthPage() {
 
   const handleVerifyOtp = async () => {
     const token = verificationCode.trim();
-    if (!token || token.length < 6) {
-      setError("Enter the 6-digit verification code from your email.");
+    if (!token || token.length < 6 || token.length > 8) {
+      setError("Enter the verification code from your email.");
       return;
     }
 
@@ -427,20 +495,43 @@ function AuthPage() {
           type: "signup",
         });
         if (nativeOtpErr) {
-          throw customErr || nativeOtpErr;
+          // If signup type didn't match, attempt with 'email' type
+          const { error: emailOtpErr } = await supabase.auth.verifyOtp({
+            email,
+            token,
+            type: "email",
+          });
+          if (emailOtpErr) {
+            throw customErr || nativeOtpErr;
+          }
         }
         verified = true;
       }
 
       if (verified) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        if (password) {
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
 
-        if (signInError) {
+          if (signInError) {
+            const { data: sessionData } = await supabase.auth.getSession();
+            if (!sessionData?.session) {
+              toast.success("Email verified successfully! Please sign in.");
+              setShowVerification(false);
+              setActiveTab("login");
+              return;
+            }
+          }
+        } else {
           const { data: sessionData } = await supabase.auth.getSession();
-          if (!sessionData?.session) throw signInError;
+          if (!sessionData?.session) {
+            toast.success("Email verified successfully! Please sign in.");
+            setShowVerification(false);
+            setActiveTab("login");
+            return;
+          }
         }
 
         toast.success("Email verified successfully. Welcome to Noble Gain.");
@@ -457,13 +548,28 @@ function AuthPage() {
     setResending(true);
     setError("");
     try {
-      const result = await sendSignupOtp({ data: { email } });
-
-      if (result.cooldown > 0) {
-        toast.info(`Please wait ${result.cooldown}s before requesting another code.`);
-      } else {
-        toast.success("A fresh verification code has been sent to your email.");
+      let customSent = false;
+      try {
+        const result = await sendSignupOtp({ data: { email } });
+        if (result?.cooldown > 0) {
+          toast.info(`Please wait ${result.cooldown}s before requesting another code.`);
+          return;
+        }
+        customSent = true;
+      } catch (customErr) {
+        console.warn("Custom OTP resend note:", customErr);
       }
+
+      try {
+        await supabase.auth.resend({
+          type: "signup",
+          email,
+        });
+      } catch (nativeErr) {
+        if (!customSent) throw nativeErr;
+      }
+
+      toast.success("A fresh verification code has been sent to your email.");
     } catch (error: any) {
       setError(error.message || "Unable to resend the code.");
     } finally {
@@ -480,7 +586,7 @@ function AuthPage() {
     }
   };
 
-  const handlePasswordReset = async (e: React.FormEvent) => {
+  const handleRequestResetOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const input = resetEmail.trim();
     if (!input) {
@@ -493,23 +599,99 @@ function AuthPage() {
       let targetEmail = input;
 
       if (!targetEmail.includes("@")) {
-        const { data } = await supabase.rpc("lookup_login_email", {
+        const { data, error: rpcError } = await supabase.rpc("lookup_login_email", {
           _username: targetEmail,
         });
+        if (rpcError || !data) {
+          throw new Error("No account found with that username or email.");
+        }
         targetEmail = (data as string | null) ?? "";
       }
 
-      if (targetEmail) {
-        const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-          redirectTo: window.location.origin + "/auth",
-        });
-        if (error) throw error;
+      if (!targetEmail) {
+        throw new Error("Could not find an email associated with this account.");
       }
 
-      setResetSent(true);
-      toast.success("If an account exists, a reset link has been sent.");
+      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+        redirectTo: window.location.origin + "/auth",
+      });
+      if (error) throw error;
+
+      setResolvedResetEmail(targetEmail);
+      setResetStep("verify");
+      setResetOtp("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      toast.success(`A recovery code has been sent to ${targetEmail}`);
     } catch (error: any) {
-      setError(error.message);
+      setError(error.message || "Failed to send reset code. Please try again.");
+    } finally {
+      setResetLoading(false);
+    }
+  };
+
+  const handleResendResetOtp = async () => {
+    const target = resolvedResetEmail || resetEmail.trim();
+    if (!target) return;
+    setResendingResetOtp(true);
+    setError("");
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(target, {
+        redirectTo: window.location.origin + "/auth",
+      });
+      if (error) throw error;
+      toast.success("A fresh recovery code has been sent to your email.");
+    } catch (error: any) {
+      setError(error.message || "Failed to resend recovery code.");
+    } finally {
+      setResendingResetOtp(false);
+    }
+  };
+
+  const handleVerifyAndResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = resetOtp.trim();
+    const targetEmail = resolvedResetEmail || resetEmail.trim();
+
+    if (!token || token.length < 6 || token.length > 8) {
+      setError("Please enter the recovery code sent to your email.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("New password must be at least 6 characters.");
+      return;
+    }
+    if (confirmNewPassword && newPassword !== confirmNewPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    setResetLoading(true);
+    setError("");
+    try {
+      const { error: otpError } = await supabase.auth.verifyOtp({
+        email: targetEmail,
+        token,
+        type: "recovery",
+      });
+
+      if (otpError) throw otpError;
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) throw updateError;
+
+      toast.success("Password updated successfully! Welcome back.");
+      setShowReset(false);
+      setResetStep("request");
+      setResetOtp("");
+      setNewPassword("");
+      setConfirmNewPassword("");
+      navigate({ to: (search.redirect as any) || "/dashboard" });
+    } catch (error: any) {
+      setError(error.message || "Invalid or expired recovery code. Please try again.");
     } finally {
       setResetLoading(false);
     }
@@ -569,7 +751,7 @@ function AuthPage() {
                 Enter Your Code
               </h2>
               <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-                We sent a 6-digit verification code to{" "}
+                We sent a verification code to{" "}
                 <span className="font-bold text-foreground break-all">{email}</span>. Enter it below
                 to activate your account.
               </p>
@@ -581,11 +763,12 @@ function AuthPage() {
               </Label>
               <Input
                 value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="123456"
-                className="mt-2 h-12 rounded-2xl border-border/70 bg-background text-center text-lg font-black tracking-[0.5em]"
+                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                placeholder="Enter code"
+                className="mt-2 h-12 rounded-2xl border-border/70 bg-background text-center text-lg font-black tracking-[0.4em]"
                 inputMode="numeric"
                 autoComplete="one-time-code"
+                maxLength={8}
               />
             </div>
 
@@ -665,11 +848,19 @@ function AuthPage() {
           <Brand />
 
           <h2 className="mt-2 text-center text-lg sm:text-xl font-black tracking-tight text-foreground uppercase">
-            {showReset ? "Reset password" : activeTab === "login" ? "Welcome" : "Create account"}
+            {showReset
+              ? resetStep === "verify"
+                ? "Set New Password"
+                : "Reset password"
+              : activeTab === "login"
+                ? "Welcome"
+                : "Create account"}
           </h2>
           <p className="mx-auto mt-0.5 max-w-xs text-center text-xs sm:text-sm leading-snug text-muted-foreground">
             {showReset
-              ? "Enter your email or username and we'll send you a reset link."
+              ? resetStep === "verify"
+                ? "Enter the 6-digit recovery code and choose your new password."
+                : "Enter your email or username and we'll send you a 6-digit recovery code."
               : activeTab === "login"
                 ? "Sign in to track your points and rewards."
                 : "Join Noble Gain and start earning points from simple tasks."}
@@ -704,49 +895,215 @@ function AuthPage() {
           )}
 
           {error && (
-            <div className="mb-3 rounded-2xl bg-destructive/10 p-2.5 text-sm font-bold text-destructive">
-              {error}
+            <div className="mb-3 rounded-2xl bg-destructive/10 p-2.5 text-sm font-bold text-destructive flex flex-col gap-1.5">
+              <div>{error}</div>
+              {(error.toLowerCase().includes("confirm") ||
+                error.toLowerCase().includes("verif") ||
+                error.toLowerCase().includes("unconfirmed") ||
+                error.toLowerCase().includes("unverified")) && (
+                <button
+                  type="button"
+                  className="text-xs font-black text-primary underline text-left hover:opacity-80 cursor-pointer"
+                  onClick={async () => {
+                    let target = identifier.trim() || email.trim();
+                    if (target && !target.includes("@")) {
+                      const { data } = await supabase.rpc("lookup_login_email", {
+                        _username: target,
+                      });
+                      if (data) target = data;
+                    }
+                    if (target) {
+                      setEmail(target);
+                    }
+                    setShowVerification(true);
+                    setVerificationCode("");
+                    setError("");
+                  }}
+                >
+                  Click here to enter your verification code →
+                </button>
+              )}
             </div>
           )}
 
           {showReset ? (
-            <form onSubmit={handlePasswordReset} className="space-y-3 sm:space-y-3.5">
-              <div className="space-y-1 sm:space-y-1.5">
-                <Label htmlFor="reset-email" className={fieldLabel}>
-                  Email or username
-                </Label>
-                <Input
-                  id="reset-email"
-                  type="text"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  className={fieldInput}
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="pt-1">
-                <Button
-                  type="submit"
-                  className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold premium-shadow hover:scale-105 transition-transform"
-                  disabled={resetLoading}
+            resetStep === "request" ? (
+              <form onSubmit={handleRequestResetOtp} className="space-y-3 sm:space-y-3.5">
+                <div className="space-y-1 sm:space-y-1.5">
+                  <Label htmlFor="reset-email" className={fieldLabel}>
+                    Email or username
+                  </Label>
+                  <Input
+                    id="reset-email"
+                    type="text"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    placeholder="Enter email or username"
+                    className={fieldInput}
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="pt-1">
+                  <Button
+                    type="submit"
+                    className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold premium-shadow hover:scale-105 transition-transform"
+                    disabled={resetLoading}
+                  >
+                    {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Send recovery code
+                  </Button>
+                </div>
+                <button
+                  type="button"
+                  className="w-full text-center text-xs sm:text-sm font-bold text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                  onClick={() => {
+                    setShowReset(false);
+                    setResetStep("request");
+                    setError("");
+                  }}
                 >
-                  {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {resetSent ? "Resend link" : "Send reset link"}
-                </Button>
-              </div>
-              <button
-                type="button"
-                className="w-full text-center text-xs sm:text-sm font-bold text-muted-foreground hover:text-primary transition-colors"
-                onClick={() => {
-                  setShowReset(false);
-                  setError("");
-                }}
-              >
-                Back to sign in
-              </button>
-            </form>
+                  Back to sign in
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyAndResetPassword} className="space-y-3 sm:space-y-3.5">
+                <div className="rounded-2xl border border-border/70 bg-background/80 p-3 text-left">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    Code sent to
+                  </div>
+                  <div className="font-bold text-xs sm:text-sm text-foreground break-all mt-0.5">
+                    {resolvedResetEmail || resetEmail}
+                  </div>
+                </div>
+
+                <div className="space-y-1 sm:space-y-1.5">
+                  <Label htmlFor="reset-otp" className={fieldLabel}>
+                    Recovery Code
+                  </Label>
+                  <Input
+                    id="reset-otp"
+                    value={resetOtp}
+                    onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                    placeholder="Enter code"
+                    className="h-11 rounded-2xl border-border/70 bg-background text-center text-lg font-black tracking-[0.4em]"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={8}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1 sm:space-y-1.5">
+                  <Label htmlFor="new-password" className={fieldLabel}>
+                    New Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="new-password"
+                      type={showNewPassword ? "text" : "password"}
+                      className={cn(fieldInput, "pr-12")}
+                      placeholder="Minimum 6 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                      aria-label={showNewPassword ? "Hide password" : "Show password"}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-1 sm:space-y-1.5">
+                  <Label htmlFor="confirm-new-password" className={fieldLabel}>
+                    Confirm New Password
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="confirm-new-password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      className={cn(fieldInput, "pr-12")}
+                      placeholder="Re-enter new password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-1 space-y-2">
+                  <Button
+                    type="submit"
+                    className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold premium-shadow hover:scale-105 transition-transform"
+                    disabled={resetLoading}
+                  >
+                    {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Set New Password
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleResendResetOtp}
+                    disabled={resendingResetOtp}
+                    className="w-full h-10 sm:h-11 rounded-2xl border-border/70 bg-background text-xs sm:text-sm font-bold glass-card hover:bg-primary/5 transition-colors"
+                  >
+                    {resendingResetOtp ? (
+                      <Loader2 className="size-4 animate-spin mr-2" />
+                    ) : (
+                      <RefreshCw className="size-3.5 mr-2 text-gold" />
+                    )}
+                    {resendingResetOtp ? "Sending code..." : "Resend recovery code"}
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between text-xs sm:text-sm font-bold text-muted-foreground pt-1">
+                  <button
+                    type="button"
+                    className="hover:text-primary transition-colors cursor-pointer"
+                    onClick={() => {
+                      setResetStep("request");
+                      setError("");
+                    }}
+                  >
+                    Change email
+                  </button>
+                  <button
+                    type="button"
+                    className="hover:text-primary transition-colors cursor-pointer"
+                    onClick={() => {
+                      setShowReset(false);
+                      setResetStep("request");
+                      setError("");
+                    }}
+                  >
+                    Back to sign in
+                  </button>
+                </div>
+              </form>
+            )
           ) : (
             <div className="mt-2.5 sm:mt-3.5 w-full">
               {activeTab === "login" ? (
@@ -813,7 +1170,9 @@ function AuthPage() {
                         className="text-xs sm:text-sm font-semibold text-primary hover:underline"
                         onClick={() => {
                           setShowReset(true);
+                          setResetStep("request");
                           setResetEmail(identifier.trim());
+                          setResetOtp("");
                           setError("");
                         }}
                       >
@@ -836,10 +1195,34 @@ function AuthPage() {
                     Don't have an account?{" "}
                     <button
                       type="button"
-                      className="font-bold text-primary hover:underline transition-colors"
+                      className="font-bold text-primary hover:underline transition-colors cursor-pointer"
                       onClick={() => setActiveTab("signup")}
                     >
                       Sign up
+                    </button>
+                  </p>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Already registered but not verified?{" "}
+                    <button
+                      type="button"
+                      className="font-bold text-primary hover:underline transition-colors cursor-pointer"
+                      onClick={async () => {
+                        let target = identifier.trim();
+                        if (target && !target.includes("@")) {
+                          const { data } = await supabase.rpc("lookup_login_email", {
+                            _username: target,
+                          });
+                          if (data) target = data;
+                        }
+                        if (target) {
+                          setEmail(target);
+                        }
+                        setShowVerification(true);
+                        setVerificationCode("");
+                        setError("");
+                      }}
+                    >
+                      Enter verification code
                     </button>
                   </p>
                 </div>

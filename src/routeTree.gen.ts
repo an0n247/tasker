@@ -20,6 +20,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedEarnRouteImport } from './routes/_authenticated.earn'
 import { Route as AuthenticatedModeratorRouteImport } from './routes/_authenticated.moderator'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated.messages'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedRedeemRouteImport } from './routes/_authenticated.redeem'
 import { Route as AuthenticatedReferRouteImport } from './routes/_authenticated.refer'
@@ -84,6 +85,11 @@ const AuthenticatedEarnRoute = AuthenticatedEarnRouteImport.update({
 const AuthenticatedModeratorRoute = AuthenticatedModeratorRouteImport.update({
   id: '/moderator',
   path: '/moderator',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -153,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earn': typeof AuthenticatedEarnRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/moderator': typeof AuthenticatedModeratorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/redeem': typeof AuthenticatedRedeemRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/earn': typeof AuthenticatedEarnRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/moderator': typeof AuthenticatedModeratorRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/redeem': typeof AuthenticatedRedeemRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/earn': typeof AuthenticatedEarnRoute
+  '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/moderator': typeof AuthenticatedModeratorRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/redeem': typeof AuthenticatedRedeemRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/earn'
+    | '/messages'
     | '/moderator'
     | '/profile'
     | '/redeem'
@@ -249,6 +259,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/earn'
+    | '/messages'
     | '/moderator'
     | '/profile'
     | '/redeem'
@@ -273,6 +284,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/dashboard'
     | '/_authenticated/earn'
+    | '/_authenticated/messages'
     | '/_authenticated/moderator'
     | '/_authenticated/profile'
     | '/_authenticated/redeem'
@@ -380,6 +392,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedModeratorRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/profile': {
       id: '/_authenticated/profile'
       path: '/profile'
@@ -464,6 +483,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedEarnRoute: typeof AuthenticatedEarnRoute
+  AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedModeratorRoute: typeof AuthenticatedModeratorRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedRedeemRoute: typeof AuthenticatedRedeemRoute
@@ -477,6 +497,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedEarnRoute: AuthenticatedEarnRoute,
+  AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedModeratorRoute: AuthenticatedModeratorRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedRedeemRoute: AuthenticatedRedeemRoute,

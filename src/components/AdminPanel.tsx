@@ -27,8 +27,9 @@ import { AnalyticsView } from "./admin/AnalyticsView";
 import { PlatformSettings } from "./admin/PlatformSettings";
 import { FraudManager } from "./admin/FraudManager";
 import { PointsAuditLogs } from "./admin/PointsAuditLogs";
+import { MessagesManager } from "./admin/MessagesManager";
 import { cn } from "@/lib/utils";
-import { ListTodo, PieChart, TrendingDown, Settings, ClipboardList } from "lucide-react";
+import { ListTodo, PieChart, TrendingDown, Settings, ClipboardList, Mail } from "lucide-react";
 import { subDays, startOfDay } from "date-fns";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -218,6 +219,7 @@ export function AdminPanel() {
   const tabs = [
     { value: "analytics", icon: PieChart, label: "Analytics" },
     { value: "users", icon: Users, label: "Users" },
+    { value: "messages", icon: Mail, label: "Messages" },
     { value: "tasks", icon: ListTodo, label: "Tasks" },
     { value: "approvals", icon: Clock, label: "Submissions" },
     { value: "rewards", icon: ShoppingBag, label: "Rewards" },
@@ -229,6 +231,8 @@ export function AdminPanel() {
 
   const filteredTabs = tabs.filter((tab) => {
     if (isAdmin) return true;
+    if (tab.value === "messages") return true;
+    if (permissions === undefined) return true;
     if (!permissions) return false;
     return tab.value === "audit"
       ? permissions.includes("audit") || permissions.includes("fraud")
@@ -246,7 +250,7 @@ export function AdminPanel() {
 
   const statCards = [
     {
-      title: "Total Registered Users",
+      title: "Total Users",
       value: stats?.totalUsers.toLocaleString() || "0",
       icon: Users,
       iconColor: "text-gold",
@@ -256,7 +260,7 @@ export function AdminPanel() {
       description: "Active members",
     },
     {
-      title: "Points Distributed",
+      title: "Distributed",
       value: stats?.totalPoints.toLocaleString() || "0",
       icon: Coins,
       iconColor: "text-emerald-400",
@@ -266,7 +270,7 @@ export function AdminPanel() {
       description: "Last 30 days",
     },
     {
-      title: "Points Redeemed",
+      title: "Redeemed",
       value: stats?.pointsSpent.toLocaleString() || "0",
       icon: ShoppingBag,
       iconColor: "text-purple-400",
@@ -276,14 +280,14 @@ export function AdminPanel() {
       description: "Vault claims",
     },
     {
-      title: "Total Redemptions",
+      title: "Redemptions",
       value: stats?.totalRedemptions.toLocaleString() || "0",
       icon: TrendingUp,
       iconColor: "text-blue-400",
       iconBg: "bg-blue-500/15 border-blue-500/25",
       trend: stats?.trends.redemptions.trend || "0%",
       trendUp: stats?.trends.redemptions.up ?? true,
-      description: "Completed orders",
+      description: "Completed",
     },
   ];
 
@@ -302,52 +306,54 @@ export function AdminPanel() {
       variants={staggerContainer}
       className="space-y-8"
     >
-      {/* 4 Bento KPI Metric Cards */}
+      {/* 4 Bento KPI Metric Cards - 2 per row on mobile, 4 on desktop */}
       <motion.div
         variants={fadeInUp}
-        className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4"
       >
         {statCards.map((stat) => (
           <div
             key={stat.title}
-            className="rounded-3xl p-5 bg-ink-2/70 border border-hairline shadow-md backdrop-blur-xl group hover:border-gold/30 transition-all duration-300 space-y-3"
+            className="rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 bg-ink-2/70 border border-hairline shadow-md backdrop-blur-xl group hover:border-gold/30 transition-all duration-300 space-y-2 sm:space-y-3"
           >
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-ink-muted">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-ink-muted truncate">
                 {stat.title}
               </span>
               <div
                 className={cn(
-                  "size-8 rounded-xl flex items-center justify-center border",
+                  "size-7 sm:size-8 rounded-xl flex items-center justify-center border shrink-0",
                   stat.iconBg,
                   stat.iconColor,
                 )}
               >
-                <stat.icon className="size-4" />
+                <stat.icon className="size-3.5 sm:size-4" />
               </div>
             </div>
 
             <div>
-              <div className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-ink-fg">
+              <div className="text-xl sm:text-3xl font-black font-mono tracking-tight text-ink-fg truncate">
                 {stat.value}
               </div>
-              <div className="flex items-center gap-2 mt-1.5">
+              <div className="flex flex-wrap items-center gap-1.5 mt-1 sm:mt-1.5">
                 <span
                   className={cn(
-                    "flex items-center text-[10px] font-black px-2 py-0.5 rounded-md border",
+                    "flex items-center text-[9px] sm:text-[10px] font-black px-1.5 sm:px-2 py-0.5 rounded-md border",
                     stat.trendUp
                       ? "text-emerald-400 bg-emerald-500/15 border-emerald-500/30"
                       : "text-rose-400 bg-rose-500/15 border-rose-500/30",
                   )}
                 >
                   {stat.trendUp ? (
-                    <ArrowUpRight className="size-3 mr-0.5" />
+                    <ArrowUpRight className="size-2.5 sm:size-3 mr-0.5" />
                   ) : (
-                    <ArrowDownRight className="size-3 mr-0.5" />
+                    <ArrowDownRight className="size-2.5 sm:size-3 mr-0.5" />
                   )}
                   {stat.trend}
                 </span>
-                <p className="text-[11px] text-ink-muted font-medium">{stat.description}</p>
+                <p className="text-[10px] sm:text-[11px] text-ink-muted font-medium truncate hidden sm:inline">
+                  {stat.description}
+                </p>
               </div>
             </div>
           </div>
@@ -384,6 +390,7 @@ export function AdminPanel() {
         <div className="pt-2">
           {activeTab === "analytics" && <AnalyticsView />}
           {activeTab === "users" && <UsersManager />}
+          {activeTab === "messages" && <MessagesManager />}
           {activeTab === "tasks" && <TasksManager />}
           {activeTab === "approvals" && <TaskSubmissions />}
           {activeTab === "rewards" && <RewardsManager />}

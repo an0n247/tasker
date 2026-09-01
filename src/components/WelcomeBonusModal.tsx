@@ -91,7 +91,7 @@ export function WelcomeBonusModal() {
         ]);
 
       const isEnabled =
-        settings?.find((s: any) => s.key === "welcome_bonus_enabled")?.value === true;
+        settings?.find((s: any) => s.key === "welcome_bonus_enabled")?.value !== false;
       const amount =
         settings?.find((s: any) => s.key === "welcome_bonus_amount_referee")?.value || 50;
       const required =
@@ -126,7 +126,6 @@ export function WelcomeBonusModal() {
 
       if (
         profileData &&
-        profileData.referred_by &&
         !profileData.has_claimed_welcome_bonus &&
         !profileData.welcome_banner_dismissed
       ) {

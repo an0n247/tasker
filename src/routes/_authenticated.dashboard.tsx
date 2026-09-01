@@ -29,6 +29,7 @@ import {
   Layers,
   Percent,
   AlertCircle,
+  Mail,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -124,6 +125,19 @@ function Dashboard() {
         .select("*", { count: "exact", head: true })
         .eq("referrer_id", user.id);
       return count || 0;
+    },
+  });
+
+  const { data: unreadMessagesCount = 0 } = useQuery({
+    queryKey: ["unread-messages-count"],
+    queryFn: async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return 0;
+      const { data, error } = await supabase.rpc("get_unread_message_count");
+      if (error) return 0;
+      return Number(data) || 0;
     },
   });
 
@@ -265,8 +279,17 @@ function Dashboard() {
   });
 
   const isClaimedToday =
-    streak?.last_activity_at &&
-    new Date(streak.last_activity_at).toDateString() === new Date().toDateString();
+    Boolean(
+      recentTransactions?.some(
+        (tx) =>
+          tx.description?.toLowerCase().includes("daily check-in") &&
+          new Date(tx.created_at).toDateString() === new Date().toDateString(),
+      ) ||
+        (streak?.current_streak &&
+          streak.current_streak > 0 &&
+          streak?.last_activity_at &&
+          new Date(streak.last_activity_at).toDateString() === new Date().toDateString()),
+    );
   const currentPoints = profile?.points_balance || 0;
   const estimatedUsdValue = (currentPoints / 1000).toFixed(2);
 
@@ -408,6 +431,22 @@ function Dashboard() {
             )}
             <span>{copiedLink ? "Link Copied!" : "Copy Invite Link"}</span>
           </button>
+
+          <Button
+            asChild
+            variant="outline"
+            className="h-11 rounded-xl px-4 font-bold border-hairline bg-ink-2/80 text-ink-fg hover:border-gold/30 hover:bg-ink-3 transition-all text-xs flex items-center gap-2"
+          >
+            <Link to="/messages">
+              <Mail className="size-4 text-gold" />
+              <span>Inbox & Messages</span>
+              {unreadMessagesCount > 0 && (
+                <Badge className="h-4 px-1.5 text-[9px] bg-gold text-ink font-bold border-none ml-1">
+                  {unreadMessagesCount}
+                </Badge>
+              )}
+            </Link>
+          </Button>
 
           <Button
             asChild
@@ -956,7 +995,7 @@ function Dashboard() {
                 </div>
                 <div>
                   <h3 className="font-black text-sm text-ink-fg">Referral Bonus</h3>
-                  <p className="text-xs font-bold text-gold">+50 PTS on their first task</p>
+                  <p className="text-xs font-bold text-gold">+75 PTS on their first task</p>
                 </div>
               </div>
 
@@ -991,6 +1030,45 @@ function Dashboard() {
                 </Link>
               </Button>
             </div>
+          </div>
+
+          {/* Official Communications & Inbox Card */}
+          <div className="rounded-3xl p-6 bg-gradient-to-br from-ink-2 via-ink-2/80 to-ink border border-hairline shadow-xl space-y-4 relative overflow-hidden backdrop-blur-xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="size-9 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
+                  <Mail className="size-4.5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-ink-fg">Admin & Announcements</h3>
+                  <p className="text-[11px] font-medium text-ink-muted">Official platform communication</p>
+                </div>
+              </div>
+              {unreadMessagesCount > 0 ? (
+                <Badge className="bg-gold text-ink font-bold border-none text-[10px] px-2 py-0.5 animate-pulse">
+                  {unreadMessagesCount} Unread
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] text-ink-muted border-hairline">
+                  All caught up
+                </Badge>
+              )}
+            </div>
+
+            <p className="text-xs font-medium text-ink-muted leading-relaxed">
+              Read platform announcements, direct notices from administration, and send replies when permitted.
+            </p>
+
+            <Button
+              className="w-full rounded-xl font-bold h-10 text-xs bg-gold/15 text-gold border border-gold/30 hover:bg-gold hover:text-ink transition-all"
+              asChild
+            >
+              <Link to="/messages">
+                <Mail className="size-3.5 mr-1.5" />
+                Open Official Inbox
+                <ChevronRight className="size-4 ml-auto" />
+              </Link>
+            </Button>
           </div>
 
           {/* Quick Rewards Target */}

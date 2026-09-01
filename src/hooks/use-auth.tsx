@@ -24,35 +24,56 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const { data: role, isLoading: isRoleLoading } = useQuery({
+  const { data: authRoles, isLoading: isRoleLoading } = useQuery({
     queryKey: ["userRole", session?.user?.id],
     queryFn: async () => {
-      if (!session?.user?.id) return "user" as UserRole;
+      if (!session?.user?.id)
+        return { role: "user" as UserRole, isAdmin: false, isModerator: false, isTasker: false };
 
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .limit(1)
-        .maybeSingle();
+      const [{ data: userRoleData }, { data: isAdminRpc }, { data: isModRpc }, { data: profileData }] =
+        await Promise.all([
+          supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .limit(1)
+            .maybeSingle(),
+          supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }),
+          supabase.rpc("has_role", { _user_id: session.user.id, _role: "moderator" }),
+          supabase
+            .from("profiles")
+            .select("is_admin")
+            .eq("id", session.user.id)
+            .limit(1)
+            .maybeSingle(),
+        ]);
 
-      if (error) {
-        console.error("Error fetching role:", error);
-        return "user" as UserRole;
-      }
+      const isAdmin = Boolean(
+        userRoleData?.role === "admin" || isAdminRpc || profileData?.is_admin,
+      );
+      const isModerator = Boolean(isAdmin || userRoleData?.role === "moderator" || isModRpc);
+      const role = isAdmin
+        ? ("admin" as UserRole)
+        : isModerator
+          ? ("moderator" as UserRole)
+          : ((userRoleData?.role as UserRole) || "user");
 
-      return (data?.role as UserRole) || "user";
+      return {
+        role,
+        isAdmin,
+        isModerator,
+        isTasker: isModerator || role === "tasker" || role === "task_manager",
+      };
     },
     enabled: !!session?.user?.id,
   });
 
   return {
     user: session?.user ?? null,
-    role: role ?? "user",
-    isAdmin: role === "admin",
-    isModerator: role === "moderator" || role === "admin",
-    isTasker:
-      role === "tasker" || role === "task_manager" || role === "moderator" || role === "admin",
+    role: authRoles?.role ?? "user",
+    isAdmin: authRoles?.isAdmin ?? false,
+    isModerator: authRoles?.isModerator ?? false,
+    isTasker: authRoles?.isTasker ?? false,
     isLoading: isSessionLoading || (!!session?.user?.id && isRoleLoading),
   };
 }

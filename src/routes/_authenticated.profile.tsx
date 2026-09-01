@@ -266,7 +266,7 @@ function ProfilePage() {
       twitter: ["twitter.com/", "x.com/"],
       telegram: ["t.me/", "telegram.me/"],
       facebook: ["facebook.com/", "fb.com/"],
-      instagram: ["instagram.com/"],
+      instagram: ["instagram.com/", "instagr.am/"],
     };
 
     const platformBases = bases[type as keyof typeof bases];
@@ -304,24 +304,44 @@ function ProfilePage() {
     const clean = cleanHandle(handle, type);
 
     if (type === "twitter") {
-      if (clean.length < 4) return "Too short (min 4)";
-      if (clean.length > 15) return "Too long (max 15)";
-      if (!/^[a-zA-Z0-9_]+$/.test(clean)) return "Invalid characters";
+      if (clean.length < 1) return "Handle is required";
+      if (clean.length > 15) return "Too long (max 15 characters)";
+      if (!/^[a-zA-Z0-9_]+$/.test(clean)) return "Only letters, numbers, and underscores";
     }
     if (type === "telegram") {
-      if (clean.length < 5) return "Too short (min 5)";
-      if (clean.length > 32) return "Too long (max 32)";
-      if (!/^[a-zA-Z0-9_]+$/.test(clean)) return "Invalid characters";
+      if (clean.length < 5) return "Too short (min 5 characters)";
+      if (clean.length > 32) return "Too long (max 32 characters)";
+      if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(clean)) return "Must start with a letter (letters, numbers, _)";
     }
     if (type === "facebook") {
-      if (clean.length < 5) return "Too short (min 5)";
-      if (!/^[a-zA-Z0-9.]+$/.test(clean)) return "Invalid characters";
+      if (clean.length < 5) return "Too short (min 5 characters)";
+      if (clean.length > 50) return "Too long (max 50 characters)";
+      if (!/^[a-zA-Z0-9.]+$/.test(clean)) return "Only letters, numbers, and periods";
     }
     if (type === "instagram") {
-      if (clean.length > 30) return "Too long (max 30)";
-      if (!/^[a-zA-Z0-9._]+$/.test(clean)) return "Invalid characters";
+      if (clean.length < 1) return "Handle is required";
+      if (clean.length > 30) return "Too long (max 30 characters)";
+      if (/\.\./.test(clean)) return "Cannot contain consecutive dots";
+      if (!/^[a-zA-Z0-9._]+$/.test(clean)) return "Only letters, numbers, dots, and underscores";
     }
     return null;
+  };
+
+  const getPlatformUrl = (handle: string, type: string) => {
+    const clean = cleanHandle(handle, type);
+    if (!clean) return "";
+    switch (type) {
+      case "twitter":
+        return `https://x.com/${clean}`;
+      case "telegram":
+        return `https://t.me/${clean}`;
+      case "facebook":
+        return `https://facebook.com/${clean}`;
+      case "instagram":
+        return `https://instagram.com/${clean}`;
+      default:
+        return "";
+    }
   };
 
   const validateHandle = (handle: string, type: string) => {
@@ -345,10 +365,16 @@ function ProfilePage() {
       }
 
       if (updates.twitter_handle && !validateHandle(updates.twitter_handle, "twitter")) {
-        throw new Error("Invalid Twitter handle format");
+        throw new Error("Invalid Twitter/X handle format");
       }
       if (updates.telegram_handle && !validateHandle(updates.telegram_handle, "telegram")) {
         throw new Error("Invalid Telegram handle format");
+      }
+      if (updates.facebook_handle && !validateHandle(updates.facebook_handle, "facebook")) {
+        throw new Error("Invalid Facebook username format");
+      }
+      if (updates.instagram_handle && !validateHandle(updates.instagram_handle, "instagram")) {
+        throw new Error("Invalid Instagram username format");
       }
 
       const {
@@ -605,24 +631,26 @@ function ProfilePage() {
                   </AvatarFallback>
                 </Avatar>
 
-                {/* Camera upload overlay */}
-                <button
-                  type="button"
-                  onClick={() => document.getElementById("avatar-upload")?.click()}
-                  className="absolute inset-0 bg-ink/75 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-gold cursor-pointer border-2 border-gold/40 shadow-lg"
-                  title="Upload new profile picture"
-                >
-                  {isUploading ? (
-                    <Loader2 className="size-6 animate-spin text-gold" />
-                  ) : (
-                    <>
-                      <Camera className="size-5" />
-                      <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">
-                        Change DP
-                      </span>
-                    </>
-                  )}
-                </button>
+                {/* Camera upload overlay — ONLY active when editing */}
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById("avatar-upload")?.click()}
+                    className="absolute inset-0 bg-ink/80 rounded-full flex flex-col items-center justify-center text-gold cursor-pointer border-2 border-gold/50 shadow-lg transition-all hover:bg-ink/90 active:scale-95 animate-in fade-in duration-200"
+                    title="Upload new profile picture"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="size-6 animate-spin text-gold" />
+                    ) : (
+                      <>
+                        <Camera className="size-5" />
+                        <span className="text-[9px] font-black uppercase tracking-wider mt-0.5">
+                          Change DP
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
 
               <div className="space-y-1 mb-6">
@@ -780,35 +808,35 @@ function ProfilePage() {
                     )}
                   </div>
 
+                  {/* Profile Picture (DP) Upload Card */}
                   <div className="space-y-1.5">
-                    <Label
-                      htmlFor="avatar-url"
-                      className="text-xs font-bold uppercase tracking-wider text-ink-muted"
-                    >
+                    <Label className="text-xs font-bold uppercase tracking-wider text-ink-muted">
                       Profile Picture (DP)
                     </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="avatar-url"
-                        value={avatarUrl}
-                        onChange={(e) => setAvatarUrl(e.target.value)}
-                        className="rounded-xl h-11 bg-ink border-hairline text-ink-fg font-medium flex-1 text-xs"
-                        placeholder="https://example.com/photo.jpg or click camera to upload"
-                      />
+                    <div className="flex items-center gap-3 p-3 rounded-2xl bg-ink border border-hairline">
+                      <Avatar className="size-12 border-2 border-hairline bg-ink-3 shrink-0">
+                        <AvatarImage src={currentAvatarDisplay} className="object-cover" />
+                        <AvatarFallback className="bg-gold/15 text-gold font-black text-sm">
+                          {(profile?.username?.[0] || profile?.full_name?.[0] || "?").toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold text-ink-fg">Upload a new photo</p>
+                        <p className="text-[11px] text-ink-muted">JPG, PNG, or WEBP up to 10MB</p>
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
-                        className="rounded-xl h-11 border-hairline bg-ink hover:bg-ink-3 text-gold cursor-pointer px-4 gap-2 text-xs font-bold shrink-0"
+                        className="rounded-xl h-9 border-hairline bg-ink-2 hover:bg-ink-3 text-gold cursor-pointer px-3.5 gap-1.5 text-xs font-bold shrink-0"
                         onClick={() => document.getElementById("avatar-upload")?.click()}
-                        title="Upload file directly"
                         disabled={isUploading}
                       >
                         {isUploading ? (
-                          <Loader2 className="size-4 animate-spin" />
+                          <Loader2 className="size-3.5 animate-spin" />
                         ) : (
-                          <Camera className="size-4" />
+                          <Camera className="size-3.5" />
                         )}
-                        <span>Upload DP</span>
+                        <span>{avatarUrl || profile?.avatar_url ? "Change Photo" : "Upload Photo"}</span>
                       </Button>
                     </div>
                   </div>
@@ -861,12 +889,26 @@ function ProfilePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Twitter / X */}
                     <div className="space-y-1.5">
-                      <Label
-                        htmlFor="twitter"
-                        className="text-[11px] font-bold uppercase tracking-wider text-ink-muted"
-                      >
-                        Twitter / X
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor="twitter"
+                          className="text-[11px] font-bold uppercase tracking-wider text-ink-muted"
+                        >
+                          Twitter / X
+                        </Label>
+                        {twitter && !getValidationError(twitter, "twitter") && (
+                          <a
+                            href={getPlatformUrl(twitter, "twitter")}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-gold hover:underline"
+                            title="Open profile to verify"
+                          >
+                            <span>Test link</span>
+                            <ExternalLink className="size-2.5" />
+                          </a>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center flex-1">
                           <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-hairline bg-ink-3 text-ink-muted text-xs h-11 font-mono">
@@ -910,13 +952,13 @@ function ProfilePage() {
                         </Button>
                       </div>
                       {twitter && (
-                        <p className="text-[10px] text-ink-muted">
+                        <p className="text-[10px]">
                           {getValidationError(twitter, "twitter") ? (
                             <span className="text-rose-400 font-bold">
-                              {getValidationError(twitter, "twitter")}
+                              ✕ {getValidationError(twitter, "twitter")}
                             </span>
                           ) : (
-                            <span className="text-emerald-400">✓ Valid handle format</span>
+                            <span className="text-emerald-400 font-bold">✓ Valid Twitter/X handle</span>
                           )}
                         </p>
                       )}
@@ -924,12 +966,26 @@ function ProfilePage() {
 
                     {/* Telegram */}
                     <div className="space-y-1.5">
-                      <Label
-                        htmlFor="telegram"
-                        className="text-[11px] font-bold uppercase tracking-wider text-ink-muted"
-                      >
-                        Telegram
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor="telegram"
+                          className="text-[11px] font-bold uppercase tracking-wider text-ink-muted"
+                        >
+                          Telegram
+                        </Label>
+                        {telegram && !getValidationError(telegram, "telegram") && (
+                          <a
+                            href={getPlatformUrl(telegram, "telegram")}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-gold hover:underline"
+                            title="Open profile to verify"
+                          >
+                            <span>Test link</span>
+                            <ExternalLink className="size-2.5" />
+                          </a>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center flex-1">
                           <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-hairline bg-ink-3 text-ink-muted text-xs h-11 font-mono">
@@ -973,13 +1029,13 @@ function ProfilePage() {
                         </Button>
                       </div>
                       {telegram && (
-                        <p className="text-[10px] text-ink-muted">
+                        <p className="text-[10px]">
                           {getValidationError(telegram, "telegram") ? (
                             <span className="text-rose-400 font-bold">
-                              {getValidationError(telegram, "telegram")}
+                              ✕ {getValidationError(telegram, "telegram")}
                             </span>
                           ) : (
-                            <span className="text-emerald-400">✓ Valid handle format</span>
+                            <span className="text-emerald-400 font-bold">✓ Valid Telegram username</span>
                           )}
                         </p>
                       )}
@@ -987,12 +1043,26 @@ function ProfilePage() {
 
                     {/* Facebook */}
                     <div className="space-y-1.5">
-                      <Label
-                        htmlFor="facebook"
-                        className="text-[11px] font-bold uppercase tracking-wider text-ink-muted"
-                      >
-                        Facebook
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor="facebook"
+                          className="text-[11px] font-bold uppercase tracking-wider text-ink-muted"
+                        >
+                          Facebook
+                        </Label>
+                        {facebook && !getValidationError(facebook, "facebook") && (
+                          <a
+                            href={getPlatformUrl(facebook, "facebook")}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-gold hover:underline"
+                            title="Open profile to verify"
+                          >
+                            <span>Test link</span>
+                            <ExternalLink className="size-2.5" />
+                          </a>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center flex-1">
                           <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-hairline bg-ink-3 text-ink-muted text-xs h-11 font-mono">
@@ -1035,20 +1105,45 @@ function ProfilePage() {
                           )}
                         </Button>
                       </div>
+                      {facebook && (
+                        <p className="text-[10px]">
+                          {getValidationError(facebook, "facebook") ? (
+                            <span className="text-rose-400 font-bold">
+                              ✕ {getValidationError(facebook, "facebook")}
+                            </span>
+                          ) : (
+                            <span className="text-emerald-400 font-bold">✓ Valid Facebook username</span>
+                          )}
+                        </p>
+                      )}
                     </div>
 
                     {/* Instagram */}
                     <div className="space-y-1.5">
-                      <Label
-                        htmlFor="instagram"
-                        className="text-[11px] font-bold uppercase tracking-wider text-ink-muted"
-                      >
-                        Instagram
-                      </Label>
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor="instagram"
+                          className="text-[11px] font-bold uppercase tracking-wider text-ink-muted"
+                        >
+                          Instagram
+                        </Label>
+                        {instagram && !getValidationError(instagram, "instagram") && (
+                          <a
+                            href={getPlatformUrl(instagram, "instagram")}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[10px] font-bold text-gold hover:underline"
+                            title="Open profile to verify"
+                          >
+                            <span>Test link</span>
+                            <ExternalLink className="size-2.5" />
+                          </a>
+                        )}
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center flex-1">
                           <span className="inline-flex items-center px-3 rounded-l-xl border border-r-0 border-hairline bg-ink-3 text-ink-muted text-xs h-11 font-mono">
-                            ig.com/
+                            instagram.com/
                           </span>
                           <Input
                             id="instagram"
@@ -1087,6 +1182,17 @@ function ProfilePage() {
                           )}
                         </Button>
                       </div>
+                      {instagram && (
+                        <p className="text-[10px]">
+                          {getValidationError(instagram, "instagram") ? (
+                            <span className="text-rose-400 font-bold">
+                              ✕ {getValidationError(instagram, "instagram")}
+                            </span>
+                          ) : (
+                            <span className="text-emerald-400 font-bold">✓ Valid Instagram username</span>
+                          )}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1121,10 +1227,10 @@ function ProfilePage() {
                         username: normalizedUsername,
                         avatar_url: avatarUrl,
                         phone_number: combinedPhone,
-                        twitter_handle: twitter,
-                        facebook_handle: facebook,
-                        telegram_handle: telegram,
-                        instagram_handle: instagram,
+                        twitter_handle: cleanHandle(twitter, "twitter"),
+                        facebook_handle: cleanHandle(facebook, "facebook"),
+                        telegram_handle: cleanHandle(telegram, "telegram"),
+                        instagram_handle: cleanHandle(instagram, "instagram"),
                       });
                     }}
                     disabled={updateProfile.isPending || usernameStatus.loading}
@@ -1135,7 +1241,7 @@ function ProfilePage() {
                       </span>
                     ) : (
                       <span className="flex items-center gap-1.5">
-                        <Check className="size-4" /> Save Profile Changes
+                        <Check className="size-4" /> Save Profile Details
                       </span>
                     )}
                   </Button>
@@ -1366,32 +1472,112 @@ function ProfilePage() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl p-4 bg-ink border border-hairline flex items-center gap-3.5">
-                    <div className="size-9 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center border border-sky-500/25 shrink-0">
-                      <Share2 className="size-4" />
+                  <div className="rounded-2xl p-4 bg-ink border border-hairline flex items-center justify-between gap-3.5">
+                    <div className="flex items-center gap-3.5 overflow-hidden">
+                      <div className="size-9 rounded-xl bg-sky-500/15 text-sky-400 flex items-center justify-center border border-sky-500/25 shrink-0">
+                        <Share2 className="size-4" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">
+                          Twitter / X
+                        </p>
+                        <p className="text-xs font-bold text-ink-fg truncate font-mono">
+                          {profile?.twitter_handle ? `@${profile.twitter_handle}` : "Not linked"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="overflow-hidden">
-                      <p className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">
-                        Twitter / X
-                      </p>
-                      <p className="text-xs font-bold text-ink-fg truncate font-mono">
-                        {profile?.twitter_handle ? `@${profile.twitter_handle}` : "Not linked"}
-                      </p>
-                    </div>
+                    {profile?.twitter_handle && (
+                      <a
+                        href={getPlatformUrl(profile.twitter_handle, "twitter")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-ink-muted hover:text-gold transition-colors p-1"
+                        title="View profile"
+                      >
+                        <ExternalLink className="size-3.5" />
+                      </a>
+                    )}
                   </div>
 
-                  <div className="rounded-2xl p-4 bg-ink border border-hairline flex items-center gap-3.5">
-                    <div className="size-9 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center border border-blue-500/25 shrink-0">
-                      <Globe className="size-4" />
+                  <div className="rounded-2xl p-4 bg-ink border border-hairline flex items-center justify-between gap-3.5">
+                    <div className="flex items-center gap-3.5 overflow-hidden">
+                      <div className="size-9 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center border border-blue-500/25 shrink-0">
+                        <Globe className="size-4" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">
+                          Telegram
+                        </p>
+                        <p className="text-xs font-bold text-ink-fg truncate font-mono">
+                          {profile?.telegram_handle ? `@${profile.telegram_handle}` : "Not linked"}
+                        </p>
+                      </div>
                     </div>
-                    <div className="overflow-hidden">
-                      <p className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">
-                        Telegram
-                      </p>
-                      <p className="text-xs font-bold text-ink-fg truncate font-mono">
-                        {profile?.telegram_handle ? `@${profile.telegram_handle}` : "Not linked"}
-                      </p>
+                    {profile?.telegram_handle && (
+                      <a
+                        href={getPlatformUrl(profile.telegram_handle, "telegram")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-ink-muted hover:text-gold transition-colors p-1"
+                        title="View profile"
+                      >
+                        <ExternalLink className="size-3.5" />
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl p-4 bg-ink border border-hairline flex items-center justify-between gap-3.5">
+                    <div className="flex items-center gap-3.5 overflow-hidden">
+                      <div className="size-9 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center border border-indigo-500/25 shrink-0">
+                        <Globe className="size-4" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">
+                          Facebook
+                        </p>
+                        <p className="text-xs font-bold text-ink-fg truncate font-mono">
+                          {profile?.facebook_handle ? `@${profile.facebook_handle}` : "Not linked"}
+                        </p>
+                      </div>
                     </div>
+                    {profile?.facebook_handle && (
+                      <a
+                        href={getPlatformUrl(profile.facebook_handle, "facebook")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-ink-muted hover:text-gold transition-colors p-1"
+                        title="View profile"
+                      >
+                        <ExternalLink className="size-3.5" />
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="rounded-2xl p-4 bg-ink border border-hairline flex items-center justify-between gap-3.5">
+                    <div className="flex items-center gap-3.5 overflow-hidden">
+                      <div className="size-9 rounded-xl bg-pink-500/15 text-pink-400 flex items-center justify-center border border-pink-500/25 shrink-0">
+                        <Globe className="size-4" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] font-bold text-ink-muted uppercase tracking-wider">
+                          Instagram
+                        </p>
+                        <p className="text-xs font-bold text-ink-fg truncate font-mono">
+                          {profile?.instagram_handle ? `@${profile.instagram_handle}` : "Not linked"}
+                        </p>
+                      </div>
+                    </div>
+                    {profile?.instagram_handle && (
+                      <a
+                        href={getPlatformUrl(profile.instagram_handle, "instagram")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-ink-muted hover:text-gold transition-colors p-1"
+                        title="View profile"
+                      >
+                        <ExternalLink className="size-3.5" />
+                      </a>
+                    )}
                   </div>
 
                   <div className="rounded-2xl p-4 bg-ink border border-hairline flex items-center gap-3.5 sm:col-span-2">
