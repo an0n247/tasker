@@ -30,7 +30,7 @@ export function useAuth() {
       if (!session?.user?.id)
         return { role: "user" as UserRole, isAdmin: false, isModerator: false, isTasker: false };
 
-      const [{ data: userRoleData }, { data: isAdminRpc }, { data: isModRpc }, { data: profileData }] =
+      const [{ data: userRoleData }, { data: isAdminRpc }, { data: isModRpc }] =
         await Promise.all([
           supabase
             .from("user_roles")
@@ -40,17 +40,9 @@ export function useAuth() {
             .maybeSingle(),
           supabase.rpc("has_role", { _user_id: session.user.id, _role: "admin" }),
           supabase.rpc("has_role", { _user_id: session.user.id, _role: "moderator" }),
-          supabase
-            .from("profiles")
-            .select("is_admin")
-            .eq("id", session.user.id)
-            .limit(1)
-            .maybeSingle(),
         ]);
 
-      const isAdmin = Boolean(
-        userRoleData?.role === "admin" || isAdminRpc || profileData?.is_admin,
-      );
+      const isAdmin = Boolean(userRoleData?.role === "admin" || isAdminRpc);
       const isModerator = Boolean(isAdmin || userRoleData?.role === "moderator" || isModRpc);
       const role = isAdmin
         ? ("admin" as UserRole)

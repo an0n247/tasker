@@ -1,8 +1,22 @@
 -- ==============================================================================
--- Migration: Fix has_role function, messages table RLS, and admin permissions
+-- Migration: Fix has_role function, assign admin to user_roles, and messages RLS
 -- ==============================================================================
 
--- 1. Upgrade public.has_role to check both user_roles and profiles.is_admin
+-- 1. Ensure public.user_roles has the required roles
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'app_role') THEN
+    CREATE TYPE public.app_role AS ENUM ('admin', 'moderator', 'tasker', 'task_manager', 'user');
+  ELSE
+    ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'admin';
+    ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'moderator';
+    ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'tasker';
+    ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'task_manager';
+    ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'user';
+  END IF;
+END $$;
+
+-- 2. Upgrade public.has_role function
 CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role public.app_role)
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -15,7 +29,7 @@ BEGIN
     RETURN false;
   END IF;
 
-  -- 1. Check user_roles table
+  -- 1. Check exact role
   IF EXISTS (
     SELECT 1 FROM public.user_roles
     WHERE user_id = _user_id AND role = _role
@@ -23,26 +37,16 @@ BEGIN
     RETURN true;
   END IF;
 
-  -- 2. Check profiles table for is_admin flag
-  IF _role = 'admin' AND EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = _user_id AND is_admin = true
+  -- 2. Admin has all moderator and tasker privileges
+  IF _role IN ('moderator', 'tasker', 'task_manager') AND EXISTS (
+    SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role = 'admin'
   ) THEN
     RETURN true;
   END IF;
 
-  -- 3. If checking for moderator and user is admin, return true
-  IF _role = 'moderator' AND (
-    EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role = 'admin')
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = _user_id AND is_admin = true)
-  ) THEN
-    RETURN true;
-  END IF;
-
-  -- 4. If checking for tasker and user is admin or moderator
-  IF _role = 'tasker' AND (
-    EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role IN ('admin', 'moderator', 'tasker', 'task_manager'))
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = _user_id AND is_admin = true)
+  -- 3. Moderator has tasker privileges
+  IF _role = 'tasker' AND EXISTS (
+    SELECT 1 FROM public.user_roles WHERE user_id = _user_id AND role = 'moderator'
   ) THEN
     RETURN true;
   END IF;
@@ -51,21 +55,20 @@ BEGIN
 END;
 $$;
 
--- 2. Ensure olalekanhq@yahoo.com has admin in both user_roles and profiles
+-- 3. Assign admin role to olalekanhq@yahoo.com in public.user_roles
 DO $$
 DECLARE
   v_admin_uid UUID;
 BEGIN
   SELECT id INTO v_admin_uid FROM auth.users WHERE email = 'olalekanhq@yahoo.com';
   IF v_admin_uid IS NOT NULL THEN
-    UPDATE public.profiles SET is_admin = true WHERE id = v_admin_uid;
     INSERT INTO public.user_roles (user_id, role)
     VALUES (v_admin_uid, 'admin')
-    ON CONFLICT (user_id, role) DO NOTHING;
+    ON CONFLICT (user_id, role) DO UPDATE SET role = 'admin';
   END IF;
 END $$;
 
--- 3. Ensure RLS policies on public.messages
+-- 4. Enable RLS on messages and message_reads
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.message_reads ENABLE ROW LEVEL SECURITY;
 
@@ -76,12 +79,10 @@ TO authenticated
 USING (
     public.has_role(auth.uid(), 'admin') 
     OR public.has_role(auth.uid(), 'moderator')
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
 )
 WITH CHECK (
     public.has_role(auth.uid(), 'admin') 
     OR public.has_role(auth.uid(), 'moderator')
-    OR EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND is_admin = true)
 );
 
 DROP POLICY IF EXISTS "Users can read their own messages and broadcasts" ON public.messages;
@@ -130,7 +131,7 @@ TO authenticated
 USING (user_id = auth.uid())
 WITH CHECK (user_id = auth.uid());
 
--- 4. Re-harden send_admin_message function
+-- 5. RPC function: send_admin_message
 CREATE OR REPLACE FUNCTION public.send_admin_message(
     p_recipient_id UUID,
     p_subject TEXT,
@@ -152,9 +153,7 @@ BEGIN
         RETURN jsonb_build_object('success', false, 'message', 'Not authenticated');
     END IF;
 
-    v_is_auth_admin := public.has_role(v_admin_id, 'admin') 
-      OR public.has_role(v_admin_id, 'moderator')
-      OR EXISTS (SELECT 1 FROM public.profiles WHERE id = v_admin_id AND is_admin = true);
+    v_is_auth_admin := public.has_role(v_admin_id, 'admin') OR public.has_role(v_admin_id, 'moderator');
 
     IF NOT v_is_auth_admin THEN
         RETURN jsonb_build_object('success', false, 'message', 'Unauthorized: Admin role required');
@@ -220,7 +219,7 @@ BEGIN
 END;
 $$;
 
--- 5. Re-harden send_message_reply function
+-- 6. RPC function: send_message_reply
 CREATE OR REPLACE FUNCTION public.send_message_reply(
     p_parent_id UUID,
     p_body TEXT
@@ -254,9 +253,7 @@ BEGIN
         SELECT * INTO v_parent FROM public.messages WHERE id = v_parent.parent_id;
     END LOOP;
 
-    v_is_admin := public.has_role(v_user_id, 'admin') 
-      OR public.has_role(v_user_id, 'moderator')
-      OR EXISTS (SELECT 1 FROM public.profiles WHERE id = v_user_id AND is_admin = true);
+    v_is_admin := public.has_role(v_user_id, 'admin') OR public.has_role(v_user_id, 'moderator');
 
     IF NOT v_is_admin THEN
         IF NOT v_parent.allow_replies THEN
