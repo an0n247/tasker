@@ -141,23 +141,38 @@ export function MessagesPage() {
     queryFn: async () => {
       if (!selectedThreadId) return null;
 
-      // 1. Fetch Root Message and Replies
-      const [{ data: rootRaw }, { data: repliesRaw }] = await Promise.all([
-        supabase
+      // 1. Fetch Selected Message
+      const { data: rawMsg } = await supabase
+        .from("messages" as any)
+        .select("*")
+        .eq("id", selectedThreadId)
+        .maybeSingle();
+
+      if (!rawMsg) return null;
+
+      let root = rawMsg as any;
+      let trueRootId = selectedThreadId;
+
+      // If clicked message was a reply, fetch the root thread
+      if (root.parent_id) {
+        trueRootId = root.parent_id;
+        const { data: parentMsg } = await supabase
           .from("messages" as any)
           .select("*")
-          .eq("id", selectedThreadId)
-          .maybeSingle(),
-        supabase
-          .from("messages" as any)
-          .select("*")
-          .eq("parent_id", selectedThreadId)
-          .order("created_at", { ascending: true }),
-      ]);
+          .eq("id", trueRootId)
+          .maybeSingle();
+        if (parentMsg) {
+          root = parentMsg;
+        }
+      }
 
-      if (!rootRaw) return null;
+      // 2. Fetch all replies in thread
+      const { data: repliesRaw } = await supabase
+        .from("messages" as any)
+        .select("*")
+        .eq("parent_id", trueRootId)
+        .order("created_at", { ascending: true });
 
-      const root = rootRaw as any;
       const replies = (repliesRaw || []) as any[];
 
       // Collect all user IDs from root and replies
