@@ -434,22 +434,6 @@ function Dashboard() {
 
           <Button
             asChild
-            variant="outline"
-            className="h-11 rounded-xl px-4 font-bold border-hairline bg-ink-2/80 text-ink-fg hover:border-gold/30 hover:bg-ink-3 transition-all text-xs flex items-center gap-2"
-          >
-            <Link to="/messages">
-              <Mail className="size-4 text-gold" />
-              <span>Inbox & Messages</span>
-              {unreadMessagesCount > 0 && (
-                <Badge className="h-4 px-1.5 text-[9px] bg-gold text-ink font-bold border-none ml-1">
-                  {unreadMessagesCount}
-                </Badge>
-              )}
-            </Link>
-          </Button>
-
-          <Button
-            asChild
             className="h-11 rounded-xl px-5 font-bold bg-gold text-ink hover:bg-gold-soft transition-all text-xs shadow-lg shadow-gold/10 hover:-translate-y-0.5"
           >
             <Link to="/earn" search={{ tab: "tasks" }}>

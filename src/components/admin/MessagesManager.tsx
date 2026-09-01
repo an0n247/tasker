@@ -112,7 +112,7 @@ export function MessagesManager() {
       return msgs.map((t: any) => ({
         ...t,
         sender: profileMap.get(t.sender_id) || { id: t.sender_id, username: "Admin", email: "" },
-        recipient: t.recipient_id ? profileMap.get(t.recipient_id) || null : null,
+        recipient: t.recipient_id ? profileMap.get(t.recipient_id) || { id: t.recipient_id, username: "User", email: "" } : null,
         replyCount: replyCountMap.get(t.id) || 0,
       }));
     },
@@ -175,13 +175,13 @@ export function MessagesManager() {
       const enrichedRoot = {
         ...root,
         sender: profileMap.get(root.sender_id) || { id: root.sender_id, username: "Admin", email: "" },
-        recipient: root.recipient_id ? profileMap.get(root.recipient_id) || null : null,
+        recipient: root.recipient_id ? profileMap.get(root.recipient_id) || { id: root.recipient_id, username: "User", email: "" } : null,
       };
 
       const enrichedReplies = replies.map((r: any) => ({
         ...r,
         sender: profileMap.get(r.sender_id) || { id: r.sender_id, username: "User", email: "" },
-        recipient: r.recipient_id ? profileMap.get(r.recipient_id) || null : null,
+        recipient: r.recipient_id ? profileMap.get(r.recipient_id) || { id: r.recipient_id, username: "Recipient", email: "" } : null,
       }));
 
       return { root: enrichedRoot, replies: enrichedReplies };
