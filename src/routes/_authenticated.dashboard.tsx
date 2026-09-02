@@ -444,6 +444,44 @@ function Dashboard() {
         </div>
       </motion.header>
 
+      {/* Unread Messages Announcement Banner */}
+      {unreadMessagesCount > 0 && (
+        <motion.div
+          variants={fadeInUp}
+          className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-gold/15 via-gold/10 to-amber-500/10 border border-gold/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 backdrop-blur-xl"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="size-11 rounded-2xl bg-gold/20 border border-gold/30 flex items-center justify-center shrink-0 text-gold shadow-sm">
+              <Mail className="size-5 animate-pulse" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-ink-fg">
+                  Official Communication Received
+                </span>
+                <Badge className="bg-gold text-ink font-mono font-bold text-[10px] px-1.5 h-4">
+                  {unreadMessagesCount} unread
+                </Badge>
+              </div>
+              <p className="text-xs text-ink-muted">
+                You have {unreadMessagesCount} new official message{unreadMessagesCount > 1 ? "s" : ""} or announcement{unreadMessagesCount > 1 ? "s" : ""} from the administration.
+              </p>
+            </div>
+          </div>
+
+          <Button
+            asChild
+            size="sm"
+            className="h-9 px-4 rounded-xl font-bold text-xs bg-gold text-ink hover:bg-gold-soft border-none shrink-0 shadow-md cursor-pointer"
+          >
+            <Link to="/messages">
+              <span>Open Inbox</span>
+              <ArrowRight className="size-3.5 ml-1" />
+            </Link>
+          </Button>
+        </motion.div>
+      )}
+
       {/* Main Luxury Hero & Balance Showcase */}
       <motion.div variants={fadeInUp} className="grid lg:grid-cols-12 gap-6 items-stretch">
         {/* Left: Luxury Points Showcase Card */}

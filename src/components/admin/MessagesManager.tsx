@@ -18,6 +18,8 @@ import {
   Radio,
   CornerDownRight,
   Clock,
+  HelpCircle,
+  RefreshCw,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -60,14 +62,19 @@ export function MessagesManager() {
   const [allowReplies, setAllowReplies] = useState(true);
 
   // Filter state
-  const [filterType, setFilterType] = useState<"all" | "direct" | "broadcast">("all");
+  const [filterType, setFilterType] = useState<"all" | "direct" | "broadcast" | "support">("all");
   const [searchFilter, setSearchFilter] = useState("");
 
   // Staff reply in drawer
   const [staffReplyText, setStaffReplyText] = useState("");
 
   // Fetch all threads
-  const { data: threads = [], isLoading } = useQuery({
+  const {
+    data: threads = [],
+    isLoading,
+    isFetching,
+    refetch,
+  } = useQuery({
     queryKey: ["admin-messages-threads"],
     queryFn: async () => {
       const { data: rawMessages, error } = await supabase
@@ -111,12 +118,42 @@ export function MessagesManager() {
 
       return msgs.map((t: any) => ({
         ...t,
-        sender: profileMap.get(t.sender_id) || { id: t.sender_id, username: "Admin", email: "" },
-        recipient: t.recipient_id ? profileMap.get(t.recipient_id) || { id: t.recipient_id, username: "User", email: "" } : null,
+        sender: profileMap.get(t.sender_id) || { id: t.sender_id, username: "Member", email: "" },
+        recipient: t.recipient_id
+          ? profileMap.get(t.recipient_id) || { id: t.recipient_id, username: "User", email: "" }
+          : null,
         replyCount: replyCountMap.get(t.id) || 0,
+        isUserInquiry: !t.is_broadcast && !t.recipient_id,
       }));
     },
   });
+
+  // Real-time synchronization for admin panel
+  useEffect(() => {
+    const channel = supabase
+      .channel("admin-messages-realtime")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["admin-messages-threads"] });
+          if (activeSheetThreadId) {
+            queryClient.invalidateQueries({
+              queryKey: ["admin-thread-detail", activeSheetThreadId],
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeSheetThreadId, queryClient]);
 
   // User search query for compose
   const { data: searchedUsers = [], isLoading: isSearchingUsers } = useQuery({
@@ -126,7 +163,9 @@ export function MessagesManager() {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, full_name, email, avatar_url")
-        .or(`username.ilike.%${userSearchQuery}%,full_name.ilike.%${userSearchQuery}%,email.ilike.%${userSearchQuery}%`)
+        .or(
+          `username.ilike.%${userSearchQuery}%,full_name.ilike.%${userSearchQuery}%,email.ilike.%${userSearchQuery}%`
+        )
         .limit(8);
 
       if (error) throw error;
@@ -161,7 +200,11 @@ export function MessagesManager() {
 
       const allUserIds = Array.from(
         new Set(
-          [root.sender_id, root.recipient_id, ...replies.flatMap((r: any) => [r.sender_id, r.recipient_id])].filter(Boolean)
+          [
+            root.sender_id,
+            root.recipient_id,
+            ...replies.flatMap((r: any) => [r.sender_id, r.recipient_id]),
+          ].filter(Boolean)
         )
       );
 
@@ -174,14 +217,34 @@ export function MessagesManager() {
 
       const enrichedRoot = {
         ...root,
-        sender: profileMap.get(root.sender_id) || { id: root.sender_id, username: "Admin", email: "" },
-        recipient: root.recipient_id ? profileMap.get(root.recipient_id) || { id: root.recipient_id, username: "User", email: "" } : null,
+        sender: profileMap.get(root.sender_id) || {
+          id: root.sender_id,
+          username: "Member",
+          email: "",
+        },
+        recipient: root.recipient_id
+          ? profileMap.get(root.recipient_id) || {
+              id: root.recipient_id,
+              username: "User",
+              email: "",
+            }
+          : null,
       };
 
       const enrichedReplies = replies.map((r: any) => ({
         ...r,
-        sender: profileMap.get(r.sender_id) || { id: r.sender_id, username: "User", email: "" },
-        recipient: r.recipient_id ? profileMap.get(r.recipient_id) || { id: r.recipient_id, username: "Recipient", email: "" } : null,
+        sender: profileMap.get(r.sender_id) || {
+          id: r.sender_id,
+          username: "Participant",
+          email: "",
+        },
+        recipient: r.recipient_id
+          ? profileMap.get(r.recipient_id) || {
+              id: r.recipient_id,
+              username: "Recipient",
+              email: "",
+            }
+          : null,
       }));
 
       return { root: enrichedRoot, replies: enrichedReplies };
@@ -239,9 +302,11 @@ export function MessagesManager() {
     },
     onSuccess: () => {
       setStaffReplyText("");
-      queryClient.invalidateQueries({ queryKey: ["admin-thread-detail", activeSheetThreadId] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin-thread-detail", activeSheetThreadId],
+      });
       queryClient.invalidateQueries({ queryKey: ["admin-messages-threads"] });
-      toast.success("Staff reply posted!");
+      toast.success("Staff reply posted successfully!");
     },
     onError: (err: any) => {
       toast.error(err.message || "Could not post reply.");
@@ -258,8 +323,9 @@ export function MessagesManager() {
   };
 
   const filteredThreads = threads.filter((t: any) => {
-    if (filterType === "direct" && t.is_broadcast) return false;
+    if (filterType === "direct" && (t.is_broadcast || t.isUserInquiry)) return false;
     if (filterType === "broadcast" && !t.is_broadcast) return false;
+    if (filterType === "support" && !t.isUserInquiry) return false;
 
     if (searchFilter.trim()) {
       const q = searchFilter.toLowerCase();
@@ -268,14 +334,18 @@ export function MessagesManager() {
       const matchUser =
         t.recipient?.username?.toLowerCase().includes(q) ||
         t.recipient?.email?.toLowerCase().includes(q) ||
-        t.recipient?.full_name?.toLowerCase().includes(q);
+        t.recipient?.full_name?.toLowerCase().includes(q) ||
+        t.sender?.username?.toLowerCase().includes(q) ||
+        t.sender?.email?.toLowerCase().includes(q) ||
+        t.sender?.full_name?.toLowerCase().includes(q);
       return matchSubject || matchBody || matchUser;
     }
     return true;
   });
 
-  const directCount = threads.filter((t: any) => !t.is_broadcast).length;
+  const directCount = threads.filter((t: any) => !t.is_broadcast && !t.isUserInquiry).length;
   const broadcastCount = threads.filter((t: any) => t.is_broadcast).length;
+  const supportCount = threads.filter((t: any) => t.isUserInquiry).length;
 
   return (
     <div className="space-y-6">
@@ -287,58 +357,80 @@ export function MessagesManager() {
             Communications & Messages Console
           </h2>
           <p className="text-xs text-ink-muted">
-            Send direct communications to users or broadcast global platform announcements with
-            granular reply permissions.
+            Send direct communications to users, broadcast global announcements, and respond to
+            member support inquiries in real time.
           </p>
         </div>
 
-        <Button
-          onClick={() => {
-            resetComposeForm();
-            setIsComposeOpen(true);
-          }}
-          className="h-11 px-5 rounded-2xl font-bold text-xs bg-gold text-ink hover:bg-gold-soft border-none shadow-md shadow-gold/20 gap-2 shrink-0"
-        >
-          <Plus className="size-4" />
-          <span>New Message / Announcement</span>
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-11 px-3.5 rounded-2xl border-hairline bg-ink-2/80 text-ink-muted hover:text-gold text-xs font-bold gap-1.5"
+            title="Refresh threads"
+          >
+            <RefreshCw className={cn("size-3.5", isFetching && "animate-spin text-gold")} />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
+
+          <Button
+            onClick={() => {
+              resetComposeForm();
+              setIsComposeOpen(true);
+            }}
+            className="h-11 px-5 rounded-2xl font-bold text-xs bg-gold text-ink hover:bg-gold-soft border-none shadow-md shadow-gold/20 gap-2 shrink-0 cursor-pointer"
+          >
+            <Plus className="size-4" />
+            <span>New Message / Announcement</span>
+          </Button>
+        </div>
       </div>
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="p-4 rounded-2xl bg-ink-2/40 border border-hairline space-y-1">
-          <p className="text-xs text-ink-muted font-medium">Total Conversations</p>
+          <p className="text-xs text-ink-muted font-medium">Total Threads</p>
           <p className="text-2xl font-black text-ink-fg font-mono">{threads.length}</p>
         </div>
         <div className="p-4 rounded-2xl bg-ink-2/40 border border-hairline space-y-1">
-          <p className="text-xs text-ink-muted font-medium">Direct Messages to Members</p>
+          <p className="text-xs text-ink-muted font-medium">Direct Messages</p>
           <p className="text-2xl font-black text-gold font-mono">{directCount}</p>
         </div>
         <div className="p-4 rounded-2xl bg-ink-2/40 border border-hairline space-y-1">
-          <p className="text-xs text-ink-muted font-medium">Broadcast Announcements</p>
+          <p className="text-xs text-ink-muted font-medium">Broadcasts</p>
           <p className="text-2xl font-black text-amber-400 font-mono">{broadcastCount}</p>
+        </div>
+        <div className="p-4 rounded-2xl bg-ink-2/40 border border-hairline space-y-1">
+          <p className="text-xs text-ink-muted font-medium">Support Inquiries</p>
+          <p className="text-2xl font-black text-blue-400 font-mono">{supportCount}</p>
         </div>
       </div>
 
       {/* Filters and Search */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5 p-1 bg-ink-2/80 rounded-2xl border border-hairline w-full sm:w-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-ink-2/80 rounded-2xl border border-hairline w-full sm:w-auto overflow-x-auto scrollbar-none">
           <button
             type="button"
             onClick={() => setFilterType("all")}
             className={cn(
-              "px-4 py-1.5 rounded-xl text-xs font-bold transition-all",
-              filterType === "all" ? "bg-gold text-ink shadow-sm" : "text-ink-muted hover:text-ink-fg",
+              "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer",
+              filterType === "all"
+                ? "bg-gold text-ink shadow-sm"
+                : "text-ink-muted hover:text-ink-fg"
             )}
           >
-            All Threads ({threads.length})
+            All ({threads.length})
           </button>
           <button
             type="button"
             onClick={() => setFilterType("direct")}
             className={cn(
-              "px-4 py-1.5 rounded-xl text-xs font-bold transition-all",
-              filterType === "direct" ? "bg-gold text-ink shadow-sm" : "text-ink-muted hover:text-ink-fg",
+              "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer",
+              filterType === "direct"
+                ? "bg-gold text-ink shadow-sm"
+                : "text-ink-muted hover:text-ink-fg"
             )}
           >
             Direct ({directCount})
@@ -347,11 +439,25 @@ export function MessagesManager() {
             type="button"
             onClick={() => setFilterType("broadcast")}
             className={cn(
-              "px-4 py-1.5 rounded-xl text-xs font-bold transition-all",
-              filterType === "broadcast" ? "bg-gold text-ink shadow-sm" : "text-ink-muted hover:text-ink-fg",
+              "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer",
+              filterType === "broadcast"
+                ? "bg-gold text-ink shadow-sm"
+                : "text-ink-muted hover:text-ink-fg"
             )}
           >
             Broadcasts ({broadcastCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterType("support")}
+            className={cn(
+              "px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer",
+              filterType === "support"
+                ? "bg-gold text-ink shadow-sm"
+                : "text-ink-muted hover:text-ink-fg"
+            )}
+          >
+            Inquiries ({supportCount})
           </button>
         </div>
 
@@ -383,90 +489,112 @@ export function MessagesManager() {
           </div>
         ) : (
           <div className="divide-y divide-hairline/60">
-            {filteredThreads.map((thread: any) => (
-              <div
-                key={thread.id}
-                className="p-4 sm:p-5 hover:bg-ink-2/60 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-start gap-3.5 min-w-0">
-                  <Avatar className="size-10 rounded-xl border border-hairline shrink-0 bg-ink-2">
-                    <AvatarImage src={thread.recipient?.avatar_url || ""} />
-                    <AvatarFallback className="bg-gold/15 text-gold font-bold text-xs">
-                      {thread.is_broadcast ? <Megaphone className="size-4" /> : <User className="size-4" />}
-                    </AvatarFallback>
-                  </Avatar>
+            {filteredThreads.map((thread: any) => {
+              const displayAvatar = thread.is_broadcast
+                ? null
+                : thread.isUserInquiry
+                ? thread.sender?.avatar_url
+                : thread.recipient?.avatar_url;
 
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h4 className="text-xs sm:text-sm font-black text-ink-fg truncate">
-                        {thread.subject || "Administrative Notice"}
-                      </h4>
+              return (
+                <div
+                  key={thread.id}
+                  className="p-4 sm:p-5 hover:bg-ink-2/60 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
+                  <div className="flex items-start gap-3.5 min-w-0">
+                    <Avatar className="size-10 rounded-xl border border-hairline shrink-0 bg-ink-2">
+                      <AvatarImage src={displayAvatar || ""} />
+                      <AvatarFallback className="bg-gold/15 text-gold font-bold text-xs">
+                        {thread.is_broadcast ? (
+                          <Megaphone className="size-4" />
+                        ) : thread.isUserInquiry ? (
+                          <HelpCircle className="size-4 text-blue-400" />
+                        ) : (
+                          <User className="size-4" />
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
 
-                      {thread.is_broadcast ? (
-                        <Badge
-                          variant="outline"
-                          className="text-[9px] bg-amber-500/10 border-amber-500/30 text-amber-400 font-bold gap-1"
-                        >
-                          <Megaphone className="size-3" />
-                          Global Broadcast
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-[9px] bg-gold/10 border-gold/30 text-gold font-bold"
-                        >
-                          To: @{thread.recipient?.username || thread.recipient?.email || "User"}
-                        </Badge>
-                      )}
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h4 className="text-xs sm:text-sm font-black text-ink-fg truncate">
+                          {thread.subject || "Administrative Notice"}
+                        </h4>
 
-                      {thread.allow_replies ? (
-                        <Badge
-                          variant="outline"
-                          className="text-[9px] bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold"
-                        >
-                          Replies Allowed
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-[9px] bg-slate-500/10 border-slate-500/30 text-slate-400 font-bold"
-                        >
-                          Read-Only
-                        </Badge>
-                      )}
+                        {thread.is_broadcast ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] bg-amber-500/10 border-amber-500/30 text-amber-400 font-bold gap-1"
+                          >
+                            <Megaphone className="size-3" />
+                            Global Broadcast
+                          </Badge>
+                        ) : thread.isUserInquiry ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] bg-blue-500/10 border-blue-500/30 text-blue-400 font-bold gap-1"
+                          >
+                            <HelpCircle className="size-3" />
+                            From: @{thread.sender?.username || "Member"} (Support Ticket)
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] bg-gold/10 border-gold/30 text-gold font-bold"
+                          >
+                            To: @{thread.recipient?.username || thread.recipient?.email || "User"}
+                          </Badge>
+                        )}
 
-                      {thread.replyCount > 0 && (
-                        <Badge
-                          variant="secondary"
-                          className="text-[9px] bg-ink-3 text-gold font-mono font-bold"
-                        >
-                          {thread.replyCount} {thread.replyCount === 1 ? "reply" : "replies"}
-                        </Badge>
-                      )}
+                        {thread.allow_replies ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] bg-emerald-500/10 border-emerald-500/30 text-emerald-400 font-bold"
+                          >
+                            Replies Allowed
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="text-[9px] bg-slate-500/10 border-slate-500/30 text-slate-400 font-bold"
+                          >
+                            Read-Only
+                          </Badge>
+                        )}
+
+                        {thread.replyCount > 0 && (
+                          <Badge
+                            variant="secondary"
+                            className="text-[9px] bg-ink-3 text-gold font-mono font-bold"
+                          >
+                            {thread.replyCount} {thread.replyCount === 1 ? "reply" : "replies"}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-ink-muted line-clamp-1">{thread.body}</p>
+
+                      <p className="text-[10px] text-ink-muted font-mono">
+                        Sent {format(new Date(thread.created_at), "MMM d, yyyy h:mm a")} • Updated{" "}
+                        {formatDistanceToNow(new Date(thread.updated_at), { addSuffix: true })}
+                      </p>
                     </div>
+                  </div>
 
-                    <p className="text-xs text-ink-muted line-clamp-1">{thread.body}</p>
-
-                    <p className="text-[10px] text-ink-muted font-mono">
-                      Sent {format(new Date(thread.created_at), "MMM d, yyyy h:mm a")} • Updated{" "}
-                      {formatDistanceToNow(new Date(thread.updated_at), { addSuffix: true })}
-                    </p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActiveSheetThreadId(thread.id)}
+                      className="h-9 px-4 rounded-xl font-bold text-xs border-hairline bg-ink-2/80 hover:bg-gold/15 hover:text-gold hover:border-gold/40 gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Eye className="size-3.5" />
+                      <span>View Conversation</span>
+                    </Button>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setActiveSheetThreadId(thread.id)}
-                    className="h-9 px-4 rounded-xl font-bold text-xs border-hairline bg-ink-2/80 hover:bg-gold/15 hover:text-gold hover:border-gold/40 gap-1.5 transition-all"
-                  >
-                    <Eye className="size-3.5" />
-                    <span>View Conversation</span>
-                  </Button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -550,7 +678,7 @@ export function MessagesManager() {
                               setSelectedUser(u);
                               setUserSearchQuery("");
                             }}
-                            className="w-full text-left p-2 rounded-lg hover:bg-gold/15 flex items-center justify-between gap-2 text-xs transition-colors"
+                            className="w-full text-left p-2 rounded-lg hover:bg-gold/15 flex items-center justify-between gap-2 text-xs transition-colors cursor-pointer"
                           >
                             <div className="flex items-center gap-2">
                               <Avatar className="size-6 rounded-md">
@@ -631,8 +759,10 @@ export function MessagesManager() {
             </Button>
             <Button
               onClick={() => sendMessageMutation.mutate()}
-              disabled={sendMessageMutation.isPending || (!isBroadcast && !selectedUser) || !body.trim()}
-              className="h-10 px-5 rounded-xl font-bold text-xs bg-gold text-ink hover:bg-gold-soft border-none gap-2 shadow-md"
+              disabled={
+                sendMessageMutation.isPending || (!isBroadcast && !selectedUser) || !body.trim()
+              }
+              className="h-10 px-5 rounded-xl font-bold text-xs bg-gold text-ink hover:bg-gold-soft border-none gap-2 shadow-md cursor-pointer"
             >
               {sendMessageMutation.isPending ? (
                 "Transmitting..."
@@ -648,7 +778,10 @@ export function MessagesManager() {
       </Dialog>
 
       {/* Active Conversation Sheet Drawer */}
-      <Sheet open={!!activeSheetThreadId} onOpenChange={(open) => !open && setActiveSheetThreadId(null)}>
+      <Sheet
+        open={!!activeSheetThreadId}
+        onOpenChange={(open) => !open && setActiveSheetThreadId(null)}
+      >
         <SheetContent className="w-full sm:max-w-xl bg-ink border-hairline p-0 text-ink-fg flex flex-col justify-between">
           <SheetHeader className="p-6 border-b border-hairline">
             <div className="flex items-center gap-2">
@@ -659,9 +792,13 @@ export function MessagesManager() {
                 <Badge className="text-[9px] bg-amber-500/10 border-amber-500/30 text-amber-400">
                   Broadcast
                 </Badge>
-              ) : (
+              ) : threadDetail?.root?.recipient_id ? (
                 <Badge className="text-[9px] bg-gold/10 border-gold/30 text-gold">
                   Direct: @{threadDetail?.root?.recipient?.username || "User"}
+                </Badge>
+              ) : (
+                <Badge className="text-[9px] bg-blue-500/10 border-blue-500/30 text-blue-400">
+                  Support Ticket: @{threadDetail?.root?.sender?.username || "Member"}
                 </Badge>
               )}
             </div>
@@ -681,7 +818,7 @@ export function MessagesManager() {
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-gold flex items-center gap-1.5">
                       <Shield className="size-3.5" />
-                      {threadDetail.root.sender?.username || "Administrator"} (Initial Message)
+                      @{threadDetail.root.sender?.username || "Administrator"} (Original Message)
                     </span>
                     <span className="text-[10px] text-ink-muted font-mono">
                       {format(new Date(threadDetail.root.created_at), "MMM d, h:mm a")}
@@ -701,7 +838,7 @@ export function MessagesManager() {
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-bold text-ink-fg flex items-center gap-1.5">
                         <User className="size-3.5 text-ink-muted" />
-                        @{reply.sender?.username || "User"}
+                        @{reply.sender?.username || "Member"}
                       </span>
                       <span className="text-[10px] text-ink-muted font-mono">
                         {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
@@ -719,7 +856,7 @@ export function MessagesManager() {
           {/* Staff Reply Footer */}
           <div className="p-4 sm:p-6 border-t border-hairline bg-ink-2/40 space-y-3">
             <Textarea
-              placeholder="Type staff response to user..."
+              placeholder="Type staff response..."
               value={staffReplyText}
               onChange={(e) => setStaffReplyText(e.target.value)}
               rows={3}
@@ -729,7 +866,7 @@ export function MessagesManager() {
               <Button
                 onClick={() => staffReplyMutation.mutate(staffReplyText)}
                 disabled={!staffReplyText.trim() || staffReplyMutation.isPending}
-                className="h-9 px-5 rounded-xl font-bold text-xs bg-gold text-ink hover:bg-gold-soft border-none gap-2 shadow-md"
+                className="h-9 px-5 rounded-xl font-bold text-xs bg-gold text-ink hover:bg-gold-soft border-none gap-2 shadow-md cursor-pointer"
               >
                 {staffReplyMutation.isPending ? "Posting..." : "Post Staff Reply"}
                 <Send className="size-3.5" />
