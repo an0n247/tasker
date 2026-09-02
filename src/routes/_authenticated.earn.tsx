@@ -410,14 +410,13 @@ function EarnPage() {
             <Target className="size-3.5" />
             <span>Task Hub</span>
             <span className="text-hairline">•</span>
-            <span className="text-ink-fg/70 font-medium">10 Daily Randomized Tasks</span>
+            <span className="text-ink-fg/70 font-medium">Daily Verified Tasks</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.04em] text-ink-fg">
             Earn <span className="text-gold">Points</span>
           </h1>
           <p className="text-sm font-medium text-ink-muted">
-            Complete your 10 daily randomized partner tasks, articles, likes, and comments to earn
-            rewards.
+            Complete your daily partner tasks, articles, likes, and comments to earn rewards.
           </p>
         </div>
 
@@ -574,7 +573,7 @@ function EarnPage() {
 
           <div className="flex items-center gap-2 text-xs text-ink-muted">
             <Sparkles className="size-4 text-gold shrink-0" />
-            <span>Tasks are uniquely randomized for you each day.</span>
+            <span>Fresh tasks refreshed for you daily.</span>
           </div>
         </div>
       </motion.div>
@@ -594,7 +593,7 @@ function EarnPage() {
             </h3>
             <p className="text-xs text-ink-muted leading-relaxed font-medium">
               You have completed your 10 tasks for today! Awesome work. Check back tomorrow for your
-              next batch of 10 randomized tasks.
+              next batch of daily tasks.
             </p>
           </div>
           <Button
