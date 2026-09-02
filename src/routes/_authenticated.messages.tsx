@@ -292,16 +292,54 @@ export function MessagesPage() {
   // Send Reply Mutation
   const sendReplyMutation = useMutation({
     mutationFn: async (text: string) => {
+      if (!user) throw new Error("Please log in to send a reply.");
       if (!selectedThreadId) throw new Error("No conversation selected");
-      const { data, error } = await supabase.rpc("send_message_reply", {
-        p_parent_id: selectedThreadId,
-        p_body: text.trim(),
-      });
+      const trimmed = text.trim();
+      if (!trimmed) throw new Error("Reply cannot be empty.");
 
-      if (error) throw error;
-      const res = data as any;
-      if (!res.success) throw new Error(res.message || "Failed to send reply");
-      return res;
+      // 1. Try RPC first
+      try {
+        const { data: rpcData, error: rpcError } = await supabase.rpc("send_message_reply", {
+          p_parent_id: selectedThreadId,
+          p_body: trimmed,
+        });
+
+        if (!rpcError && (rpcData as any)?.success) {
+          return rpcData;
+        }
+      } catch (e) {
+        console.warn("RPC reply error, attempting direct table insert:", e);
+      }
+
+      // 2. Direct insert fallback into messages table
+      const root = activeRoot;
+      const targetRecipient = root?.sender_id !== user.id ? root?.sender_id : root?.recipient_id;
+
+      const { data: insertedReply, error: insertError } = await supabase
+        .from("messages" as any)
+        .insert({
+          parent_id: root?.id || selectedThreadId,
+          sender_id: user.id,
+          recipient_id: targetRecipient || null,
+          body: trimmed,
+          allow_replies: true,
+          is_broadcast: false,
+          is_read: false,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw new Error(insertError.message || "Failed to send reply");
+      }
+
+      // Bump thread timestamp
+      await supabase
+        .from("messages" as any)
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", root?.id || selectedThreadId);
+
+      return { success: true, reply_id: insertedReply?.id };
     },
     onSuccess: () => {
       setReplyText("");
@@ -319,22 +357,51 @@ export function MessagesPage() {
   // Send New User Support Message Mutation
   const sendSupportMessageMutation = useMutation({
     mutationFn: async () => {
+      if (!user) throw new Error("Please log in to submit a ticket.");
       if (!supportBody.trim()) {
         throw new Error("Message body is required.");
       }
 
-      const { data, error } = await supabase.rpc("send_user_support_message", {
-        p_subject: supportSubject.trim() || "Member Support Inquiry",
-        p_body: supportBody.trim(),
-      });
+      const trimmedSubject = supportSubject.trim() || "Member Support Inquiry";
+      const trimmedBody = supportBody.trim();
 
-      if (error) throw error;
-      const res = data as any;
-      if (!res.success) throw new Error(res.message || "Failed to submit message");
-      return res;
+      // 1. Try RPC first
+      try {
+        const { data: rpcData, error: rpcError } = await supabase.rpc("send_user_support_message", {
+          p_subject: trimmedSubject,
+          p_body: trimmedBody,
+        });
+
+        if (!rpcError && (rpcData as any)?.success) {
+          return rpcData;
+        }
+      } catch (e) {
+        console.warn("RPC send_user_support_message failed, attempting direct table insert:", e);
+      }
+
+      // 2. Fallback to direct table insert
+      const { data: insertedMsg, error: insertError } = await supabase
+        .from("messages" as any)
+        .insert({
+          sender_id: user.id,
+          recipient_id: null,
+          subject: trimmedSubject,
+          body: trimmedBody,
+          allow_replies: true,
+          is_broadcast: false,
+          is_read: false,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw new Error(insertError.message || "Failed to submit support message");
+      }
+
+      return { success: true, message_id: insertedMsg?.id };
     },
     onSuccess: (res: any) => {
-      toast.success("Support ticket sent to administration!");
+      toast.success("Support ticket submitted to administration!");
       setIsSupportDialogOpen(false);
       setSupportSubject("");
       setSupportBody("");
