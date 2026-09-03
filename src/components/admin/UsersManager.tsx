@@ -46,7 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { assignUserRole } from "@/lib/admin.functions";
+import { assignUserRole, getAdminUsersList } from "@/lib/admin.functions";
 import { adjustUserPoints } from "@/lib/admin-points.functions";
 import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
@@ -67,6 +67,7 @@ export function UsersManager() {
   const queryClient = useQueryClient();
   const assignRoleFn = useServerFn(assignUserRole);
   const adjustPointsFn = useServerFn(adjustUserPoints);
+  const getAdminUsersFn = useServerFn(getAdminUsersList);
 
   const handleAdjustPoints = async () => {
     if (!selectedUser || !pointAction.amount || !pointAction.reason) {
@@ -99,40 +100,85 @@ export function UsersManager() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users", searchQuery, roleFilter, currentPage],
     queryFn: async () => {
+      // 1. Try server function first
+      try {
+        const result = await getAdminUsersFn({
+          data: {
+            search: searchQuery,
+            page: currentPage,
+            limit: itemsPerPage,
+          },
+        });
+        if (result && Array.isArray(result.users)) {
+          let finalUsers = result.users;
+          if (roleFilter !== "all") {
+            finalUsers = result.users.filter(
+              (user: any) =>
+                (roleFilter === "admin" && user.isAdmin) ||
+                (roleFilter === "moderator" && user.isModerator) ||
+                (roleFilter === "task_manager" && user.isTaskManager) ||
+                (roleFilter === "user" && !user.isAdmin && !user.isModerator && !user.isTaskManager)
+            );
+          }
+          return { users: finalUsers, totalCount: result.totalCount || 0 };
+        }
+      } catch (srvErr) {
+        console.warn("Server function getAdminUsersList error, attempting direct client query:", srvErr);
+      }
+
+      // 2. Direct client query fallback
       let query = supabase.from("profiles").select("*", { count: "exact" });
-      if (searchQuery) {
-        query = query.or(
-          `username.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%,full_name.ilike.%${searchQuery}%`,
-        );
+      if (searchQuery && searchQuery.trim()) {
+        const s = searchQuery.trim();
+        query = query.or(`username.ilike.%${s}%,email.ilike.%${s}%,full_name.ilike.%${s}%`);
       }
       const from = (currentPage - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
+
       const {
         data: profiles,
         count,
         error: profilesError,
       } = await query.order("created_at", { ascending: false }).range(from, to);
-      if (profilesError) throw profilesError;
-      const { data: roles, error: rolesError } = await supabase
-        .from("user_roles")
-        .select("user_id, role")
-        .in(
-          "user_id",
-          profiles.map((p) => p.id),
-        );
-      if (rolesError) throw rolesError;
-      const mappedUsers = profiles.map((profile) => ({
+
+      if (profilesError) {
+        console.error("Profiles error:", profilesError);
+        throw profilesError;
+      }
+
+      const profileList = profiles || [];
+      let roles: any[] = [];
+      if (profileList.length > 0) {
+        try {
+          const userIds = profileList.map((p) => p.id);
+          const { data: rolesData, error: rolesError } = await supabase
+            .from("user_roles")
+            .select("user_id, role")
+            .in("user_id", userIds);
+          if (!rolesError && rolesData) {
+            roles = rolesData;
+          }
+        } catch (rErr) {
+          console.warn("User roles fetch error:", rErr);
+        }
+      }
+
+      const mappedUsers = profileList.map((profile) => ({
         ...profile,
         isAdmin: roles?.some((r) => r.user_id === profile.id && r.role === "admin"),
         isModerator: roles?.some((r) => r.user_id === profile.id && r.role === "moderator"),
         isTaskManager: roles?.some((r) => r.user_id === profile.id && r.role === "task_manager"),
         currentRole: roles?.find((r) => r.user_id === profile.id)?.role || "user",
       }));
+
       let finalUsers = mappedUsers;
       if (roleFilter !== "all") {
         finalUsers = mappedUsers.filter(
           (user) =>
-            (roleFilter === "admin" && user.isAdmin) || (roleFilter === "user" && !user.isAdmin),
+            (roleFilter === "admin" && user.isAdmin) ||
+            (roleFilter === "moderator" && user.isModerator) ||
+            (roleFilter === "task_manager" && user.isTaskManager) ||
+            (roleFilter === "user" && !user.isAdmin && !user.isModerator && !user.isTaskManager)
         );
       }
       return { users: finalUsers, totalCount: count || 0 };
