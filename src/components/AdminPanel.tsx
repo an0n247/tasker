@@ -29,7 +29,7 @@ import { FraudManager } from "./admin/FraudManager";
 import { PointsAuditLogs } from "./admin/PointsAuditLogs";
 import { MessagesManager } from "./admin/MessagesManager";
 import { cn } from "@/lib/utils";
-import { ListTodo, PieChart, TrendingDown, Settings, ClipboardList, Mail } from "lucide-react";
+import { ListTodo, PieChart, TrendingDown, Settings, ClipboardList, Mail, LifeBuoy } from "lucide-react";
 import { subDays, startOfDay } from "date-fns";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
@@ -219,7 +219,7 @@ export function AdminPanel() {
   const tabs = [
     { value: "analytics", icon: PieChart, label: "Analytics" },
     { value: "users", icon: Users, label: "Users" },
-    { value: "messages", icon: Mail, label: "Messages" },
+    { value: "messages", icon: LifeBuoy, label: "Support Inbox" },
     { value: "tasks", icon: ListTodo, label: "Tasks" },
     { value: "approvals", icon: Clock, label: "Submissions" },
     { value: "rewards", icon: ShoppingBag, label: "Rewards" },
