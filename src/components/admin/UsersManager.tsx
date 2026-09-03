@@ -213,7 +213,12 @@ export function UsersManager() {
     queryKey: ["user-details", selectedUser?.id],
     queryFn: async () => {
       if (!selectedUser) return null;
-      const [txs, refs, reds, stats] = await Promise.all([
+      const [profileRes, txs, refs, reds, stats] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", selectedUser.id)
+          .maybeSingle(),
         supabase
           .from("points_transactions")
           .select("*")
@@ -221,7 +226,7 @@ export function UsersManager() {
           .order("created_at", { ascending: false }),
         supabase
           .from("referrals")
-          .select("*, profiles!referrals_referee_id_fkey(username, full_name, email)")
+          .select("*, profiles!referrals_referee_id_fkey(username, full_name, email, twitter_handle, telegram_handle)")
           .eq("referrer_id", selectedUser.id)
           .order("created_at", { ascending: false }),
         supabase
@@ -236,6 +241,7 @@ export function UsersManager() {
           .maybeSingle(),
       ]);
       return {
+        profile: profileRes.data || selectedUser,
         transactions: txs.data || [],
         referrals: refs.data || [],
         redemptions: reds.data || [],
@@ -244,6 +250,8 @@ export function UsersManager() {
     },
     enabled: !!selectedUser && isDetailsOpen,
   });
+
+  const currentUser = userDetails?.profile ? { ...selectedUser, ...userDetails.profile } : selectedUser;
 
   if (isLoading) {
     return (
@@ -295,6 +303,7 @@ export function UsersManager() {
           <TableHeader>
             <TableRow>
               <TableHead>User</TableHead>
+              <TableHead>Social Handles</TableHead>
               <TableHead>Contact</TableHead>
               <TableHead>Balance</TableHead>
               <TableHead>Joined</TableHead>
@@ -318,30 +327,56 @@ export function UsersManager() {
                         {user.isAdmin && <ShieldAlert className="h-3 w-3 text-primary" />}
                       </div>
                       <div className="text-xs text-muted-foreground">{user.full_name}</div>
-                      {(user.twitter_handle || user.telegram_handle || user.instagram_handle) && (
-                        <div className="flex flex-wrap items-center gap-1 mt-1">
-                          {user.twitter_handle && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-500 bg-sky-500/10 px-1.5 py-0.5 rounded-md">
-                              𝕏 @{user.twitter_handle.replace(/^@/, "")}
-                            </span>
-                          )}
-                          {user.telegram_handle && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded-md">
-                              ✈ @{user.telegram_handle.replace(/^@/, "")}
-                            </span>
-                          )}
-                          {user.instagram_handle && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-pink-500 bg-pink-500/10 px-1.5 py-0.5 rounded-md">
-                              📸 @{user.instagram_handle.replace(/^@/, "")}
-                            </span>
-                          )}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="text-xs">{user.email}</div>
+                  <div className="flex flex-wrap items-center gap-1.5 max-w-[280px]">
+                    {user.twitter_handle ? (
+                      <a
+                        href={`https://x.com/${user.twitter_handle.replace(/^@/, "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-500 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 px-1.5 py-0.5 rounded-md transition-colors"
+                      >
+                        𝕏 @{user.twitter_handle.replace(/^@/, "")}
+                      </a>
+                    ) : null}
+                    {user.telegram_handle ? (
+                      <a
+                        href={`https://t.me/${user.telegram_handle.replace(/^@/, "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 px-1.5 py-0.5 rounded-md transition-colors"
+                      >
+                        ✈ @{user.telegram_handle.replace(/^@/, "")}
+                      </a>
+                    ) : null}
+                    {user.instagram_handle ? (
+                      <a
+                        href={`https://instagram.com/${user.instagram_handle.replace(/^@/, "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 text-[10px] font-bold text-pink-500 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/20 px-1.5 py-0.5 rounded-md transition-colors"
+                      >
+                        📸 @{user.instagram_handle.replace(/^@/, "")}
+                      </a>
+                    ) : null}
+                    {user.facebook_handle ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-500 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded-md">
+                        Facebook: {user.facebook_handle}
+                      </span>
+                    ) : null}
+                    {!user.twitter_handle && !user.telegram_handle && !user.instagram_handle && !user.facebook_handle && (
+                      <span className="text-[11px] text-muted-foreground italic">None connected</span>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="text-xs font-medium">{user.email}</div>
+                  {user.phone_number && (
+                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">{user.phone_number}</div>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{user.points_balance || 0} pts</Badge>
@@ -369,26 +404,82 @@ export function UsersManager() {
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
         <DialogContent className="max-w-4xl w-[95vw] sm:w-full max-h-[90vh] overflow-y-auto rounded-[2rem] p-4 sm:p-8">
           <DialogHeader>
-            <div className="flex items-center gap-4 mb-4">
-              <Avatar className="h-16 w-16 border-2 border-primary/20">
-                <AvatarImage src={selectedUser?.avatar_url || ""} />
-                <AvatarFallback className="bg-primary/5">
-                  <User className="h-8 w-8 text-primary/40" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <DialogTitle className="text-2xl font-black uppercase tracking-tight">
-                  {selectedUser?.username || "User Details"}
-                </DialogTitle>
-                <div className="flex items-center gap-2 text-muted-foreground font-medium">
-                  <Mail className="h-4 w-4" />
-                  <span>{selectedUser?.email}</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-border/40">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 border-2 border-primary/20">
+                  <AvatarImage src={currentUser?.avatar_url || ""} />
+                  <AvatarFallback className="bg-primary/5">
+                    <User className="h-8 w-8 text-primary/40" />
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <DialogTitle className="text-2xl font-black uppercase tracking-tight">
+                      {currentUser?.username || "User Details"}
+                    </DialogTitle>
+                    {currentUser?.isAdmin && (
+                      <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] font-black uppercase">
+                        Admin
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 text-muted-foreground font-medium text-xs mt-1">
+                    <div className="flex items-center gap-1.5">
+                      <Mail className="h-3.5 w-3.5" />
+                      <span>{currentUser?.email}</span>
+                    </div>
+                    {currentUser?.phone_number && (
+                      <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold">
+                        <Phone className="h-3.5 w-3.5" />
+                        <span>{currentUser.phone_number}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
+              </div>
+
+              {/* Prominent Header Social Badges */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {currentUser?.twitter_handle && (
+                  <a
+                    href={`https://x.com/${currentUser.twitter_handle.replace(/^@/, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-sky-500 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 px-2.5 py-1 rounded-xl transition-colors"
+                  >
+                    <Twitter className="h-3.5 w-3.5" /> 𝕏 @{currentUser.twitter_handle.replace(/^@/, "")}
+                  </a>
+                )}
+                {currentUser?.telegram_handle && (
+                  <a
+                    href={`https://t.me/${currentUser.telegram_handle.replace(/^@/, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-blue-500 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 px-2.5 py-1 rounded-xl transition-colors"
+                  >
+                    <Send className="h-3.5 w-3.5" /> ✈ @{currentUser.telegram_handle.replace(/^@/, "")}
+                  </a>
+                )}
+                {currentUser?.instagram_handle && (
+                  <a
+                    href={`https://instagram.com/${currentUser.instagram_handle.replace(/^@/, "")}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-bold text-pink-500 bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/20 px-2.5 py-1 rounded-xl transition-colors"
+                  >
+                    <Instagram className="h-3.5 w-3.5" /> 📸 @{currentUser.instagram_handle.replace(/^@/, "")}
+                  </a>
+                )}
+                {currentUser?.facebook_handle && (
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-indigo-500 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded-xl">
+                    <Facebook className="h-3.5 w-3.5" /> {currentUser.facebook_handle}
+                  </span>
+                )}
               </div>
             </div>
           </DialogHeader>
 
-          {selectedUser && (
+          {currentUser && (
             <div className="space-y-8 py-4">
               {/* Account Overview Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -402,7 +493,7 @@ export function UsersManager() {
                         Total Points
                       </span>
                       <span className="text-2xl font-black">
-                        {selectedUser.points_balance || 0}
+                        {currentUser.points_balance || 0}
                       </span>
                     </div>
                   </CardContent>
@@ -432,8 +523,8 @@ export function UsersManager() {
                         Joined
                       </span>
                       <span className="text-sm font-bold">
-                        {selectedUser.created_at
-                          ? format(new Date(selectedUser.created_at), "MMM d, yyyy")
+                        {currentUser.created_at
+                          ? format(new Date(currentUser.created_at), "MMM d, yyyy")
                           : "N/A"}
                       </span>
                     </div>
@@ -447,7 +538,7 @@ export function UsersManager() {
                     <span className="text-[10px] font-black uppercase text-muted-foreground">
                       Points
                     </span>
-                    <span className="text-sm font-black">{selectedUser.points_balance || 0}</span>
+                    <span className="text-sm font-black">{currentUser.points_balance || 0}</span>
                   </div>
                   <div className="w-px h-8 bg-border/50" />
                   <div className="flex flex-col items-center gap-1">
@@ -464,8 +555,8 @@ export function UsersManager() {
                       Joined
                     </span>
                     <span className="text-xs font-bold">
-                      {selectedUser.created_at
-                        ? format(new Date(selectedUser.created_at), "MMM d, yy")
+                      {currentUser.created_at
+                        ? format(new Date(currentUser.created_at), "MMM d, yy")
                         : "N/A"}
                     </span>
                   </div>
@@ -481,15 +572,23 @@ export function UsersManager() {
                   <div className="space-y-3 bg-accent/5 p-4 rounded-2xl border border-border/50">
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-muted-foreground">Full Name</span>
-                      <span className="text-sm font-black">{selectedUser.full_name || "N/A"}</span>
+                      <span className="text-sm font-black">{currentUser.full_name || "N/A"}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-muted-foreground">Username</span>
-                      <span className="text-sm font-black">@{selectedUser.username}</span>
+                      <span className="text-sm font-black">@{currentUser.username}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-muted-foreground">Email</span>
+                      <span className="text-sm font-bold text-muted-foreground">{currentUser.email}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-bold text-muted-foreground">Phone / Contact</span>
+                      <span className="text-sm font-black">{currentUser.phone_number || "Not provided"}</span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-xs font-bold text-muted-foreground">User ID</span>
-                      <span className="text-[10px] font-mono opacity-50">{selectedUser.id}</span>
+                      <span className="text-[10px] font-mono opacity-50">{currentUser.id}</span>
                     </div>
                   </div>
                 </div>
@@ -502,8 +601,8 @@ export function UsersManager() {
                     <div className="flex flex-col gap-2">
                       <span className="text-xs font-bold text-muted-foreground">Current Role</span>
                       <Select
-                        defaultValue={selectedUser.currentRole}
-                        onValueChange={(val) => handleRoleChange(selectedUser.id, val)}
+                        defaultValue={currentUser.currentRole}
+                        onValueChange={(val) => handleRoleChange(currentUser.id, val)}
                       >
                         <SelectTrigger className="w-full rounded-xl bg-background border-primary/20 h-10">
                           <SelectValue placeholder="Select Role" />
@@ -526,7 +625,7 @@ export function UsersManager() {
                   <h3 className="text-sm font-black uppercase flex items-center gap-2 text-sky-500">
                     <Share2 className="h-4 w-4" /> Social Handles & Verification
                   </h3>
-                  {selectedUser.has_claimed_welcome_bonus ? (
+                  {currentUser.has_claimed_welcome_bonus ? (
                     <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-bold">
                       <ShieldCheck className="h-3 w-3 mr-1" /> Profile Verified
                     </Badge>
@@ -544,9 +643,9 @@ export function UsersManager() {
                       <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
                         <Twitter className="h-3.5 w-3.5 text-sky-500" /> Twitter / X
                       </span>
-                      {selectedUser.twitter_handle ? (
+                      {currentUser.twitter_handle ? (
                         <a
-                          href={`https://x.com/${selectedUser.twitter_handle.replace(/^@/, "")}`}
+                          href={`https://x.com/${currentUser.twitter_handle.replace(/^@/, "")}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-sky-500 hover:text-sky-600 transition-colors"
@@ -556,8 +655,8 @@ export function UsersManager() {
                       ) : null}
                     </div>
                     <span className="text-sm font-black tracking-tight truncate">
-                      {selectedUser.twitter_handle ? (
-                        `@${selectedUser.twitter_handle.replace(/^@/, "")}`
+                      {currentUser.twitter_handle ? (
+                        `@${currentUser.twitter_handle.replace(/^@/, "")}`
                       ) : (
                         <span className="text-xs font-normal text-muted-foreground italic">Not connected</span>
                       )}
@@ -570,9 +669,9 @@ export function UsersManager() {
                       <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
                         <Send className="h-3.5 w-3.5 text-blue-500" /> Telegram
                       </span>
-                      {selectedUser.telegram_handle ? (
+                      {currentUser.telegram_handle ? (
                         <a
-                          href={`https://t.me/${selectedUser.telegram_handle.replace(/^@/, "")}`}
+                          href={`https://t.me/${currentUser.telegram_handle.replace(/^@/, "")}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-blue-500 hover:text-blue-600 transition-colors"
@@ -582,8 +681,8 @@ export function UsersManager() {
                       ) : null}
                     </div>
                     <span className="text-sm font-black tracking-tight truncate">
-                      {selectedUser.telegram_handle ? (
-                        `@${selectedUser.telegram_handle.replace(/^@/, "")}`
+                      {currentUser.telegram_handle ? (
+                        `@${currentUser.telegram_handle.replace(/^@/, "")}`
                       ) : (
                         <span className="text-xs font-normal text-muted-foreground italic">Not connected</span>
                       )}
@@ -596,9 +695,9 @@ export function UsersManager() {
                       <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
                         <Instagram className="h-3.5 w-3.5 text-pink-500" /> Instagram
                       </span>
-                      {selectedUser.instagram_handle ? (
+                      {currentUser.instagram_handle ? (
                         <a
-                          href={`https://instagram.com/${selectedUser.instagram_handle.replace(/^@/, "")}`}
+                          href={`https://instagram.com/${currentUser.instagram_handle.replace(/^@/, "")}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-pink-500 hover:text-pink-600 transition-colors"
@@ -608,8 +707,8 @@ export function UsersManager() {
                       ) : null}
                     </div>
                     <span className="text-sm font-black tracking-tight truncate">
-                      {selectedUser.instagram_handle ? (
-                        `@${selectedUser.instagram_handle.replace(/^@/, "")}`
+                      {currentUser.instagram_handle ? (
+                        `@${currentUser.instagram_handle.replace(/^@/, "")}`
                       ) : (
                         <span className="text-xs font-normal text-muted-foreground italic">Not connected</span>
                       )}
@@ -624,7 +723,7 @@ export function UsersManager() {
                       </span>
                     </div>
                     <span className="text-sm font-black tracking-tight truncate">
-                      {selectedUser.facebook_handle || (
+                      {currentUser.facebook_handle || (
                         <span className="text-xs font-normal text-muted-foreground italic">Not connected</span>
                       )}
                     </span>
@@ -638,7 +737,7 @@ export function UsersManager() {
                       </span>
                     </div>
                     <span className="text-sm font-black tracking-tight truncate">
-                      {selectedUser.phone_number || (
+                      {currentUser.phone_number || (
                         <span className="text-xs font-normal text-muted-foreground italic">Not provided</span>
                       )}
                     </span>
@@ -653,11 +752,11 @@ export function UsersManager() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-black tracking-tight font-mono text-amber-600 dark:text-amber-400">
-                        {selectedUser.referral_code || "N/A"}
+                        {currentUser.referral_code || "N/A"}
                       </span>
-                      {selectedUser.referral_code_used && (
+                      {currentUser.referral_code_used && (
                         <span className="text-[10px] text-muted-foreground">
-                          Invited by: <span className="font-bold font-mono">@{selectedUser.referral_code_used}</span>
+                          Invited by: <span className="font-bold font-mono">@{currentUser.referral_code_used}</span>
                         </span>
                       )}
                     </div>

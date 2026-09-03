@@ -249,7 +249,7 @@ export function TaskSubmissions() {
           created_at,
           verified_at,
           tasks (id, title, points, category),
-          profiles (id, full_name, username)
+          profiles (id, full_name, username, email, twitter_handle, telegram_handle, facebook_handle, instagram_handle, phone_number)
         `,
         )
         .order(filter === "pending" ? "created_at" : "verified_at", {
@@ -520,6 +520,25 @@ export function TaskSubmissions() {
                           <div className="text-[10px] text-muted-foreground uppercase font-black">
                             @{sub.profiles?.username || "unknown"}
                           </div>
+                          {(sub.profiles?.twitter_handle || sub.profiles?.telegram_handle || sub.profiles?.instagram_handle || sub.profiles?.facebook_handle) && (
+                            <div className="flex flex-wrap items-center gap-1 mt-1">
+                              {sub.profiles.twitter_handle && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-sky-500 bg-sky-500/10 px-1 py-0.2 rounded">
+                                  𝕏 @{sub.profiles.twitter_handle.replace(/^@/, "")}
+                                </span>
+                              )}
+                              {sub.profiles.telegram_handle && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-blue-500 bg-blue-500/10 px-1 py-0.2 rounded">
+                                  ✈ @{sub.profiles.telegram_handle.replace(/^@/, "")}
+                                </span>
+                              )}
+                              {sub.profiles.instagram_handle && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-pink-500 bg-pink-500/10 px-1 py-0.2 rounded">
+                                  📸 @{sub.profiles.instagram_handle.replace(/^@/, "")}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </TableCell>

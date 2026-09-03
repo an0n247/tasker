@@ -49,7 +49,7 @@ export function RedemptionsManager() {
       let query = supabase.from("redemptions").select(
         `
           *,
-          profiles:user_id(full_name, email, username),
+          profiles:user_id(id, full_name, email, username, phone_number, twitter_handle, telegram_handle),
           rewards:reward_id(title, cost_points)
         `,
         { count: "exact" },
@@ -214,6 +214,23 @@ export function RedemptionsManager() {
                   <TableCell className="px-6 py-4">
                     <div className="font-bold">{r.profiles?.full_name || r.profiles?.username}</div>
                     <div className="text-xs text-muted-foreground">{r.profiles?.email}</div>
+                    {r.profiles?.phone_number && (
+                      <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">{r.profiles.phone_number}</div>
+                    )}
+                    {(r.profiles?.twitter_handle || r.profiles?.telegram_handle) && (
+                      <div className="flex flex-wrap items-center gap-1 mt-1">
+                        {r.profiles.twitter_handle && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-sky-500 bg-sky-500/10 px-1 py-0.2 rounded">
+                            𝕏 @{r.profiles.twitter_handle.replace(/^@/, "")}
+                          </span>
+                        )}
+                        {r.profiles.telegram_handle && (
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-blue-500 bg-blue-500/10 px-1 py-0.2 rounded">
+                            ✈ @{r.profiles.telegram_handle.replace(/^@/, "")}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="px-6 py-4 font-medium">
                     <div>{r.rewards?.title}</div>
