@@ -119,25 +119,21 @@ export function TaskSubmissions() {
 
   const revokeMutation = useMutation({
     mutationFn: async ({ submissionId, note }: { submissionId: string; note: string }) => {
-      // 1. Try RPC first
+      // 1. Try RPC first (with safe catch)
       try {
         const { data, error } = await (supabase.rpc as any)("admin_revoke_task_submission", {
           _submission_id: submissionId,
           _admin_note: note || null,
         });
 
-        if (!error && (data as any)?.success !== false) {
+        if (!error && data && (data as any).success !== false) {
           return data as any;
         }
-        if (
-          error &&
-          !error.message?.includes("schema cache") &&
-          !error.message?.includes("Could not find")
-        ) {
-          throw error;
+        if (error) {
+          console.warn("RPC admin_revoke_task_submission returned error, using direct table operations:", error);
         }
       } catch (e: any) {
-        console.warn("RPC admin_revoke_task_submission failed, applying direct fallback:", e);
+        console.warn("RPC admin_revoke_task_submission threw, applying direct fallback:", e);
       }
 
       // 2. Direct database table operations fallback
@@ -160,13 +156,13 @@ export function TaskSubmissions() {
       if (sub.status === "verified" && taskPoints > 0) {
         pointsRemoved = taskPoints;
 
-        // Record reversal transaction
+        // Record reversal transaction (use String for source_id to prevent text = uuid mismatches)
         await supabase.from("points_transactions").insert({
           user_id: sub.user_id,
           amount: -taskPoints,
           type: "adjust",
           description: `Reversed points for revoked task: ${taskTitle}`,
-          source_id: sub.id,
+          source_id: String(sub.id),
           status: "completed",
         });
 

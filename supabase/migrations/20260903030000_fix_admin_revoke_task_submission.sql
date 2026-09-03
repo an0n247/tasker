@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Migration: Define admin_revoke_task_submission function
+-- Migration: Define admin_revoke_task_submission function (with text/uuid cast fix)
 -- ==============================================================================
 
 CREATE OR REPLACE FUNCTION public.admin_revoke_task_submission(
@@ -29,10 +29,12 @@ BEGIN
 
   SELECT title INTO v_task_title FROM public.tasks WHERE id = v_sub.task_id;
 
-  -- Check if points were credited in transactions table
+  -- Check if points were credited in transactions table (explicit text casting to avoid text = uuid operator error)
   SELECT COALESCE(SUM(amount), 0) INTO v_credited
   FROM public.points_transactions
-  WHERE user_id = v_sub.user_id AND source_id = v_sub.id AND status = 'completed';
+  WHERE user_id = v_sub.user_id 
+    AND source_id::text = v_sub.id::text 
+    AND status = 'completed';
 
   -- Fallback: if no source_id match but status was verified, get task points
   IF v_credited = 0 AND v_sub.status = 'verified' THEN
@@ -47,7 +49,7 @@ BEGIN
       -v_credited,
       'adjust',
       'Reversed points for revoked task: ' || COALESCE(v_task_title, 'task'),
-      v_sub.id,
+      v_sub.id::text,
       'completed'
     );
   END IF;
