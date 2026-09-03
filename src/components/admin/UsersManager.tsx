@@ -32,6 +32,16 @@ import {
   Minus,
   Coins,
   Loader2,
+  Share2,
+  Twitter,
+  Send,
+  Instagram,
+  Facebook,
+  ExternalLink,
+  ShieldCheck,
+  Globe,
+  Sparkles,
+  Smartphone,
 } from "lucide-react";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -308,6 +318,25 @@ export function UsersManager() {
                         {user.isAdmin && <ShieldAlert className="h-3 w-3 text-primary" />}
                       </div>
                       <div className="text-xs text-muted-foreground">{user.full_name}</div>
+                      {(user.twitter_handle || user.telegram_handle || user.instagram_handle) && (
+                        <div className="flex flex-wrap items-center gap-1 mt-1">
+                          {user.twitter_handle && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-sky-500 bg-sky-500/10 px-1.5 py-0.5 rounded-md">
+                              𝕏 @{user.twitter_handle.replace(/^@/, "")}
+                            </span>
+                          )}
+                          {user.telegram_handle && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded-md">
+                              ✈ @{user.telegram_handle.replace(/^@/, "")}
+                            </span>
+                          )}
+                          {user.instagram_handle && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-pink-500 bg-pink-500/10 px-1.5 py-0.5 rounded-md">
+                              📸 @{user.instagram_handle.replace(/^@/, "")}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </TableCell>
@@ -486,6 +515,151 @@ export function UsersManager() {
                           <SelectItem value="task_manager">Task Manager</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Social Handles & Connected Accounts */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black uppercase flex items-center gap-2 text-sky-500">
+                    <Share2 className="h-4 w-4" /> Social Handles & Verification
+                  </h3>
+                  {selectedUser.has_claimed_welcome_bonus ? (
+                    <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] font-bold">
+                      <ShieldCheck className="h-3 w-3 mr-1" /> Profile Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground">
+                      Unverified Socials
+                    </Badge>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* Twitter / X */}
+                  <div className="p-3.5 rounded-2xl bg-sky-500/5 border border-sky-500/20 flex flex-col justify-between gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                        <Twitter className="h-3.5 w-3.5 text-sky-500" /> Twitter / X
+                      </span>
+                      {selectedUser.twitter_handle ? (
+                        <a
+                          href={`https://x.com/${selectedUser.twitter_handle.replace(/^@/, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-sky-500 hover:text-sky-600 transition-colors"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : null}
+                    </div>
+                    <span className="text-sm font-black tracking-tight truncate">
+                      {selectedUser.twitter_handle ? (
+                        `@${selectedUser.twitter_handle.replace(/^@/, "")}`
+                      ) : (
+                        <span className="text-xs font-normal text-muted-foreground italic">Not connected</span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Telegram */}
+                  <div className="p-3.5 rounded-2xl bg-blue-500/5 border border-blue-500/20 flex flex-col justify-between gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                        <Send className="h-3.5 w-3.5 text-blue-500" /> Telegram
+                      </span>
+                      {selectedUser.telegram_handle ? (
+                        <a
+                          href={`https://t.me/${selectedUser.telegram_handle.replace(/^@/, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-500 hover:text-blue-600 transition-colors"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : null}
+                    </div>
+                    <span className="text-sm font-black tracking-tight truncate">
+                      {selectedUser.telegram_handle ? (
+                        `@${selectedUser.telegram_handle.replace(/^@/, "")}`
+                      ) : (
+                        <span className="text-xs font-normal text-muted-foreground italic">Not connected</span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Instagram */}
+                  <div className="p-3.5 rounded-2xl bg-pink-500/5 border border-pink-500/20 flex flex-col justify-between gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                        <Instagram className="h-3.5 w-3.5 text-pink-500" /> Instagram
+                      </span>
+                      {selectedUser.instagram_handle ? (
+                        <a
+                          href={`https://instagram.com/${selectedUser.instagram_handle.replace(/^@/, "")}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-pink-500 hover:text-pink-600 transition-colors"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      ) : null}
+                    </div>
+                    <span className="text-sm font-black tracking-tight truncate">
+                      {selectedUser.instagram_handle ? (
+                        `@${selectedUser.instagram_handle.replace(/^@/, "")}`
+                      ) : (
+                        <span className="text-xs font-normal text-muted-foreground italic">Not connected</span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Facebook */}
+                  <div className="p-3.5 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 flex flex-col justify-between gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                        <Facebook className="h-3.5 w-3.5 text-indigo-500" /> Facebook
+                      </span>
+                    </div>
+                    <span className="text-sm font-black tracking-tight truncate">
+                      {selectedUser.facebook_handle || (
+                        <span className="text-xs font-normal text-muted-foreground italic">Not connected</span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Phone / Contact */}
+                  <div className="p-3.5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 flex flex-col justify-between gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                        <Phone className="h-3.5 w-3.5 text-emerald-500" /> Phone / Contact
+                      </span>
+                    </div>
+                    <span className="text-sm font-black tracking-tight truncate">
+                      {selectedUser.phone_number || (
+                        <span className="text-xs font-normal text-muted-foreground italic">Not provided</span>
+                      )}
+                    </span>
+                  </div>
+
+                  {/* Referral Code & Inviter */}
+                  <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex flex-col justify-between gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5">
+                        <Hash className="h-3.5 w-3.5 text-amber-500" /> Referral Code
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-black tracking-tight font-mono text-amber-600 dark:text-amber-400">
+                        {selectedUser.referral_code || "N/A"}
+                      </span>
+                      {selectedUser.referral_code_used && (
+                        <span className="text-[10px] text-muted-foreground">
+                          Invited by: <span className="font-bold font-mono">@{selectedUser.referral_code_used}</span>
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
