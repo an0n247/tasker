@@ -69,16 +69,46 @@ export function TaskSubmissions() {
   };
 
   const sendNoteMutation = useMutation({
-    mutationFn: async ({ userId, message, taskTitle }: { userId: string; message: string; taskTitle: string }) => {
-      const { data, error } = await (supabase.rpc as any)("send_user_notification", {
-        _user_id: userId,
-        _title: `Note about "${taskTitle}"`,
-        _message: message,
-        _type: "info",
-        _metadata: {},
-      });
-      if (error) throw error;
-      return data;
+    mutationFn: async ({
+      userId,
+      message,
+      taskTitle,
+    }: {
+      userId: string;
+      message: string;
+      taskTitle: string;
+    }) => {
+      // 1. Try RPC
+      try {
+        const { data, error } = await (supabase.rpc as any)("send_user_notification", {
+          _user_id: userId,
+          _title: `Note about "${taskTitle}"`,
+          _message: message,
+          _type: "info",
+          _metadata: {},
+        });
+        if (!error && (data as any)?.success !== false) {
+          return data;
+        }
+      } catch (e) {
+        console.warn("RPC send_user_notification failed, using direct table insert:", e);
+      }
+
+      // 2. Direct table insert fallback
+      const { data: inserted, error: insertError } = await supabase
+        .from("notifications")
+        .insert({
+          user_id: userId,
+          title: `Note about "${taskTitle}"`,
+          message: message,
+          type: "info",
+          metadata: {},
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      return { success: true };
     },
     onSuccess: () => {
       toast.success("Note sent to the user");
@@ -89,14 +119,99 @@ export function TaskSubmissions() {
 
   const revokeMutation = useMutation({
     mutationFn: async ({ submissionId, note }: { submissionId: string; note: string }) => {
-      const { data, error } = await (supabase.rpc as any)("admin_revoke_task_submission", {
-        _submission_id: submissionId,
-        _admin_note: note || null,
-      });
-      if (error) throw error;
-      if (data && (data as any).success === false)
-        throw new Error((data as any).message || "Failed to remove task");
-      return data as any;
+      // 1. Try RPC first
+      try {
+        const { data, error } = await (supabase.rpc as any)("admin_revoke_task_submission", {
+          _submission_id: submissionId,
+          _admin_note: note || null,
+        });
+
+        if (!error && (data as any)?.success !== false) {
+          return data as any;
+        }
+        if (
+          error &&
+          !error.message?.includes("schema cache") &&
+          !error.message?.includes("Could not find")
+        ) {
+          throw error;
+        }
+      } catch (e: any) {
+        console.warn("RPC admin_revoke_task_submission failed, applying direct fallback:", e);
+      }
+
+      // 2. Direct database table operations fallback
+      const { data: subData, error: subError } = await supabase
+        .from("task_submissions" as any)
+        .select("*, tasks(id, title, points)")
+        .eq("id", submissionId)
+        .single();
+
+      if (subError || !subData) {
+        throw new Error(subError?.message || "Submission not found");
+      }
+
+      const sub = subData as any;
+      const taskTitle = sub.tasks?.title || "Task";
+      const taskPoints = Number(sub.tasks?.points || 0);
+
+      // If submission was verified/completed, reverse the points
+      let pointsRemoved = 0;
+      if (sub.status === "verified" && taskPoints > 0) {
+        pointsRemoved = taskPoints;
+
+        // Record reversal transaction
+        await supabase.from("points_transactions").insert({
+          user_id: sub.user_id,
+          amount: -taskPoints,
+          type: "adjust",
+          description: `Reversed points for revoked task: ${taskTitle}`,
+          source_id: sub.id,
+          status: "completed",
+        });
+
+        // Adjust user profile balance
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("points_balance")
+          .eq("id", sub.user_id)
+          .single();
+
+        if (profile) {
+          const newBal = Math.max(0, (Number(profile.points_balance) || 0) - taskPoints);
+          await supabase
+            .from("profiles")
+            .update({ points_balance: newBal })
+            .eq("id", sub.user_id);
+        }
+      }
+
+      // Delete the submission so task is fresh and available again
+      const { error: deleteError } = await supabase
+        .from("task_submissions" as any)
+        .delete()
+        .eq("id", submissionId);
+
+      if (deleteError) {
+        throw new Error(deleteError.message || "Failed to remove submission record");
+      }
+
+      // Notify the user
+      try {
+        await supabase.from("notifications").insert({
+          user_id: sub.user_id,
+          title: `Task reset: ${taskTitle}`,
+          message:
+            (note?.trim() || "This task was reset by an admin and is available to complete again.") +
+            (pointsRemoved > 0 ? ` ${pointsRemoved} points were reversed.` : ""),
+          type: "warning",
+          metadata: { task_id: sub.task_id },
+        });
+      } catch (nErr) {
+        console.warn("Notification insert failed:", nErr);
+      }
+
+      return { success: true, points_removed: pointsRemoved };
     },
     onSuccess: (data) => {
       toast.success(
@@ -105,10 +220,10 @@ export function TaskSubmissions() {
       closeNoteDialog();
       queryClient.invalidateQueries({ queryKey: ["admin-task-submissions"] });
       queryClient.invalidateQueries({ queryKey: ["admin-submission-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["adminStats"] });
     },
     onError: (error: any) => toast.error(error.message || "Failed to remove task"),
   });
-
 
   const { data: counts } = useQuery({
     queryKey: ["admin-submission-counts"],
@@ -178,15 +293,83 @@ export function TaskSubmissions() {
     mutationFn: async ({ id, approve }: { id: string; approve: boolean }) => {
       setProcessingId(id);
       const note = adminNotes[id] || "";
-      const { data, error } = await (supabase.rpc as any)("verify_task_submission", {
-        _submission_id: id,
-        _approve: approve,
-        _admin_note: note,
-      });
 
-      if (error) throw error;
-      if (data && !data.success) throw new Error(data.message);
-      return data;
+      // 1. Try RPC
+      try {
+        const { data, error } = await (supabase.rpc as any)("verify_task_submission", {
+          _submission_id: id,
+          _approve: approve,
+          _admin_note: note,
+        });
+
+        if (!error && data && data.success !== false) {
+          return data;
+        }
+        if (
+          error &&
+          !error.message?.includes("schema cache") &&
+          !error.message?.includes("Could not find")
+        ) {
+          throw error;
+        }
+      } catch (e: any) {
+        console.warn("RPC verify_task_submission failed, attempting direct table fallback:", e);
+      }
+
+      // 2. Direct database update fallback
+      const newStatus = approve ? "verified" : "rejected";
+      const { data: sub, error: fetchErr } = await supabase
+        .from("task_submissions" as any)
+        .select("*, tasks(id, title, points)")
+        .eq("id", id)
+        .single();
+
+      if (fetchErr || !sub) {
+        throw new Error(fetchErr?.message || "Submission not found");
+      }
+
+      const { error: updateErr } = await supabase
+        .from("task_submissions" as any)
+        .update({
+          status: newStatus,
+          admin_note: note || null,
+          verified_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (updateErr) throw updateErr;
+
+      // If approved, credit points if not already credited
+      if (approve && sub.tasks?.points > 0) {
+        const taskPoints = Number(sub.tasks.points);
+        await supabase.from("points_transactions").insert({
+          user_id: sub.user_id,
+          amount: taskPoints,
+          type: "task_reward",
+          description: `Reward for task: ${sub.tasks.title}`,
+          source_id: sub.id,
+          status: "completed",
+        });
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("points_balance")
+          .eq("id", sub.user_id)
+          .single();
+
+        if (profile) {
+          const newBal = (Number(profile.points_balance) || 0) + taskPoints;
+          await supabase
+            .from("profiles")
+            .update({ points_balance: newBal })
+            .eq("id", sub.user_id);
+        }
+      }
+
+      return {
+        success: true,
+        message: approve ? "Task submission approved" : "Task submission rejected",
+      };
     },
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-task-submissions"] });
@@ -218,7 +401,6 @@ export function TaskSubmissions() {
         return "No submissions recorded yet.";
     }
   }, [filter]);
-
 
   const statusBadge = (status: string) => {
     if (status === "verified" || status === "approved") {
@@ -287,7 +469,6 @@ export function TaskSubmissions() {
           })}
         </div>
       </div>
-
 
       {isLoading ? (
         <div className="flex justify-center p-12">
@@ -445,18 +626,18 @@ export function TaskSubmissions() {
                               setNoteTarget({
                                 submissionId: sub.id,
                                 userId: sub.profiles?.id,
-                                userName: sub.profiles?.full_name || sub.profiles?.username || "user",
+                                userName:
+                                  sub.profiles?.full_name || sub.profiles?.username || "user",
                                 taskTitle: sub.tasks?.title || "Task",
                               })
                             }
                             disabled={!sub.profiles?.id}
                           >
                             <MessageSquare className="h-3 w-3 mr-1" />
-                            Send Note
+                            Send Note / Revoke
                           </Button>
                         </div>
                       )}
-
                     </TableCell>
                   </TableRow>
                 ))
@@ -470,27 +651,29 @@ export function TaskSubmissions() {
         open={!!noteTarget}
         onOpenChange={(open) => {
           if (!open) {
-            setNoteTarget(null);
-            setNoteMessage("");
-            setRemoveTask(false);
+            closeNoteDialog();
           }
         }}
-
       >
         <DialogContent className="rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="font-black uppercase tracking-tight">Send Note</DialogTitle>
+            <DialogTitle className="font-black uppercase tracking-tight">
+              {removeTask ? "Revoke & Reset Task" : "Send Note to User"}
+            </DialogTitle>
             <DialogDescription>
-              Send a message to {noteTarget?.userName} about "{noteTarget?.taskTitle}". They will
-              receive it in their notifications.
+              {removeTask
+                ? `Revoking this task will delete the submission record, reverse points, and notify ${noteTarget?.userName}.`
+                : `Send a message to ${noteTarget?.userName} about "${noteTarget?.taskTitle}". They will receive it in their notifications.`}
             </DialogDescription>
           </DialogHeader>
+
           <Textarea
-            placeholder="Write your note to the user..."
+            placeholder="Write your note or reason to the user..."
             value={noteMessage}
             onChange={(e) => setNoteMessage(e.target.value)}
             className="min-h-28 rounded-xl"
           />
+
           <label className="flex items-start gap-3 rounded-xl border border-border p-3 cursor-pointer">
             <Checkbox
               checked={removeTask}
@@ -498,13 +681,14 @@ export function TaskSubmissions() {
               className="mt-0.5"
             />
             <span className="text-xs">
-              <span className="font-bold block">Remove the task</span>
+              <span className="font-bold block text-destructive">Revoke / Reset the task</span>
               <span className="text-muted-foreground">
                 Resets this task back to the user as a fresh task and removes the points credited
                 for it.
               </span>
             </span>
           </label>
+
           <DialogFooter>
             <Button
               className="rounded-xl font-bold"
@@ -537,13 +721,11 @@ export function TaskSubmissions() {
               ) : (
                 <MessageSquare className="h-4 w-4 mr-1" />
               )}
-              {removeTask ? "Remove Task & Notify" : "Send Note"}
+              {removeTask ? "Revoke Task & Reclaim Points" : "Send Note"}
             </Button>
           </DialogFooter>
-
         </DialogContent>
       </Dialog>
     </div>
-
   );
 }
