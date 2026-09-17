@@ -147,6 +147,9 @@ function EarnPage() {
         .from("video_ad_progress")
         .select("task_id, watch_count")
         .eq("user_id", authUser.id);
+      const { data: adsLinkProgress } = await (supabase.from("ads_link_progress" as any) as any)
+        .select("task_id, click_count")
+        .eq("user_id", authUser.id);
 
       const submissionsMap = new Map(
         (submissions as any)?.map((s: any) => [
@@ -156,6 +159,9 @@ function EarnPage() {
       );
       const progressMap = new Map(
         (videoProgress as any)?.map((p: any) => [p.task_id, p.watch_count]),
+      );
+      const adsLinkProgressMap = new Map(
+        (adsLinkProgress as any)?.map((p: any) => [p.task_id, p.click_count]),
       );
 
       return (
@@ -168,6 +174,7 @@ function EarnPage() {
             admin_note: submission?.admin_note || null,
             submission_date: submission?.created_at || null,
             watch_count: progressMap.get(task.id) || 0,
+            click_count: adsLinkProgressMap.get(task.id) || 0,
           };
         }) || []
       );
@@ -320,8 +327,63 @@ function EarnPage() {
     setInstructionModalTask(null);
 
     const taskAny = task as any;
-    if (taskAny.link_url) {
-      window.open(taskAny.link_url, "_blank");
+    if (taskAny.category === "Ads Link") {
+      const recordClick = async () => {
+        const {
+          data: { user: authUser },
+        } = await supabase.auth.getUser();
+        if (!authUser) {
+          toast.error("You must be signed in to click this task.");
+          return;
+        }
+
+        if ((taskAny.click_count || 0) >= 10) {
+          const { data, error } = await (supabase.rpc as any)("submit_task", {
+            _user_id: authUser.id,
+            _task_id: taskAny.id,
+          });
+
+          if (error) {
+            toast.error(error.message);
+            return;
+          }
+          if (!(data as any)?.success) {
+            toast.error((data as any)?.message || "Could not claim this reward.");
+            return;
+          }
+
+          confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+          toast.success((data as any).message || `Task completed! +${taskAny.points} points awarded.`);
+          refetchTasks();
+          queryClient.invalidateQueries({ queryKey: ["profile"] });
+          queryClient.invalidateQueries({ queryKey: ["daily-task-stats"] });
+          return;
+        }
+
+        if (taskAny.link_url) {
+          window.open(taskAny.link_url, "_blank");
+        }
+
+        const { data, error } = await (supabase.rpc as any)("record_ads_link_click", {
+          _user_id: authUser.id,
+          _task_id: taskAny.id,
+        });
+
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+        if (!(data as any)?.success) {
+          toast.error((data as any)?.message || "Could not record ad click.");
+          return;
+        }
+
+        toast.success((data as any).message);
+        refetchTasks();
+      };
+
+      void recordClick();
+      return;
     }
 
     setTaskUiStates((prev) => ({ ...prev, [task.id]: "verifying" }));
@@ -617,6 +679,7 @@ function EarnPage() {
                 const isVerified = task.status === "verified";
                 const isRejected = task.status === "rejected";
                 const isVideo = task.category === "Videos" && task.video_ad_count > 0;
+                const isAdsLink = task.category === "Ads Link";
                 const parsedKeyword = parseTaskKeywordData(task.icon_name);
                 const hasKeyword = parsedKeyword.hasKeyword;
                 const currentUi = taskUiStates[task.id] || "idle";
@@ -698,6 +761,27 @@ function EarnPage() {
                           <p className="text-[11px] text-ink-muted font-medium">
                             Earn {task.points} PTS once all {task.video_ad_count} videos are
                             watched.
+                          </p>
+                        </div>
+                      )}
+                      {isAdsLink && !isVerified && (
+                        <div className="space-y-1.5 pt-1">
+                          <div className="flex justify-between text-[11px] font-bold text-ink-muted font-mono">
+                            <span>Ad Click Progress</span>
+                            <span className="text-ink-fg">
+                              {task.click_count || 0} / 10 Clicks
+                            </span>
+                          </div>
+                          <div className="w-full bg-ink-3 h-2 rounded-full overflow-hidden border border-hairline">
+                            <div
+                              className="bg-gradient-to-r from-gold to-emerald-400 h-full transition-all duration-500 rounded-full"
+                              style={{
+                                width: `${Math.min(100, ((task.click_count || 0) / 10) * 100)}%`,
+                              }}
+                            />
+                          </div>
+                          <p className="text-[11px] text-ink-muted font-medium">
+                            Click the ad link 10 times to claim {task.points} PTS.
                           </p>
                         </div>
                       )}
@@ -934,6 +1018,17 @@ function EarnPage() {
                               Watch Video ({task.watch_count || 0}/{task.video_ad_count})
                             </span>
                           )
+                        ) : isAdsLink ? (
+                          <span className="flex items-center gap-1.5">
+                            {task.click_count >= 10 ? (
+                              <CheckCircle2 className="size-3.5" />
+                            ) : (
+                              <ExternalLink className="size-3.5" />
+                            )}
+                            {task.click_count >= 10
+                              ? "Claim Reward"
+                              : `Click Ad (${task.click_count || 0}/10)`}
+                          </span>
                         ) : currentUi === "verifying" ? (
                           <span className="flex items-center gap-2">
                             <Loader2 className="size-4 animate-spin text-amber-400" />
@@ -1070,8 +1165,9 @@ function EarnPage() {
                             2
                           </span>
                           <span>
-                            Read the content, hit like, and share your thoughtful comment or
-                            feedback.
+                            {instructionModalTask.category === "Ads Link"
+                              ? "Click the ad link 10 times. Each click updates your progress toward the reward."
+                              : "Read the content, hit like, and share your thoughtful comment or feedback."}
                           </span>
                         </li>
                         {parsedKeyword.hasKeyword && (
@@ -1090,11 +1186,23 @@ function EarnPage() {
                             {parsedKeyword.hasKeyword ? "4" : "3"}
                           </span>
                           <span>
-                            Return to this tab and confirm to immediately receive your{" "}
-                            <strong className="text-emerald-400">
-                              +{instructionModalTask.points} PTS
-                            </strong>
-                            !
+                            {instructionModalTask.category === "Ads Link" ? (
+                              <>
+                                Your{" "}
+                                <strong className="text-emerald-400">
+                                  +{instructionModalTask.points} PTS
+                                </strong>{" "}
+                                reward can be claimed after the 10th click.
+                              </>
+                            ) : (
+                              <>
+                                Return to this tab and confirm to immediately receive your{" "}
+                                <strong className="text-emerald-400">
+                                  +{instructionModalTask.points} PTS
+                                </strong>
+                                !
+                              </>
+                            )}
                           </span>
                         </li>
                       </ul>
@@ -1123,7 +1231,7 @@ function EarnPage() {
                       onClick={() => handleStartTaskExecution(instructionModalTask)}
                       className="rounded-xl font-bold text-xs bg-gold text-ink hover:bg-gold-soft px-5 gap-2 shadow-md cursor-pointer"
                     >
-                      <span>Open Task & Start</span>
+                      <span>{instructionModalTask.category === "Ads Link" ? "Click Ad Link" : "Open Task & Start"}</span>
                       <ExternalLink className="size-3.5" />
                     </Button>
                   </DialogFooter>

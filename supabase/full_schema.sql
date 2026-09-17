@@ -247,6 +247,17 @@ CREATE TABLE public.video_ad_progress (
     UNIQUE (user_id, task_id)
 );
 
+-- Ads Link Progress table
+CREATE TABLE public.ads_link_progress (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    task_id UUID NOT NULL REFERENCES public.tasks(id) ON DELETE CASCADE,
+    click_count INTEGER DEFAULT 0 NOT NULL,
+    last_click_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (user_id, task_id)
+);
+
 -- 4. Views
 
 -- Leaderboard view
@@ -959,6 +970,8 @@ DECLARE
   v_verification_required boolean;
   v_last_submission_date date;
   v_points integer;
+  v_category text;
+  v_ad_click_count integer;
 BEGIN
   IF auth.uid() IS NULL OR auth.uid() <> _user_id THEN
     RETURN json_build_object('success', false, 'message', 'Unauthorized');
@@ -991,13 +1004,27 @@ BEGIN
     );
   END IF;
 
-  SELECT is_repeatable, verification_required, points
-  INTO v_is_repeatable, v_verification_required, v_points
+  SELECT is_repeatable, verification_required, points, category
+  INTO v_is_repeatable, v_verification_required, v_points, v_category
   FROM public.tasks
   WHERE id = _task_id AND is_active = true;
 
   IF NOT FOUND THEN
     RETURN json_build_object('success', false, 'message', 'Task not found or inactive');
+  END IF;
+
+  IF v_category = 'Ads Link' THEN
+    SELECT click_count
+      INTO v_ad_click_count
+    FROM public.ads_link_progress
+    WHERE user_id = _user_id AND task_id = _task_id;
+
+    IF COALESCE(v_ad_click_count, 0) < 10 THEN
+      RETURN json_build_object(
+        'success', false,
+        'message', format('Click the ad link %s more times before claiming this reward', 10 - COALESCE(v_ad_click_count, 0))
+      );
+    END IF;
   END IF;
 
   SELECT status, (created_at AT TIME ZONE 'UTC')::date
@@ -1354,6 +1381,67 @@ BEGIN
 END;
 $$;
 
+-- Record Ads Link click and complete the task after ten clicks.
+CREATE OR REPLACE FUNCTION public.record_ads_link_click(_user_id uuid, _task_id uuid)
+RETURNS json
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_task RECORD;
+    v_progress RECORD;
+    v_now TIMESTAMPTZ := NOW();
+BEGIN
+    IF auth.uid() IS NULL OR auth.uid() <> _user_id THEN
+        RETURN json_build_object('success', false, 'message', 'Unauthorized');
+    END IF;
+
+    SELECT id, title, category, link_url
+      INTO v_task
+    FROM public.tasks
+    WHERE id = _task_id
+      AND is_active = true
+      AND category = 'Ads Link'
+      AND NULLIF(TRIM(link_url), '') IS NOT NULL;
+
+    IF NOT FOUND THEN
+        RETURN json_build_object('success', false, 'message', 'Ads Link task not found or inactive');
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM public.task_submissions
+        WHERE user_id = _user_id AND task_id = _task_id AND status IN ('verified', 'approved')
+    ) THEN
+        RETURN json_build_object('success', false, 'message', 'Task already completed');
+    END IF;
+
+    INSERT INTO public.ads_link_progress (user_id, task_id, click_count, last_click_at)
+    VALUES (_user_id, _task_id, 1, v_now)
+    ON CONFLICT (user_id, task_id) DO UPDATE
+    SET click_count = ads_link_progress.click_count + 1, last_click_at = v_now
+    RETURNING * INTO v_progress;
+
+    IF v_progress.click_count >= 10 THEN
+        RETURN json_build_object(
+            'success', true,
+            'ready_to_claim', true,
+            'click_count', v_progress.click_count,
+            'required_clicks', 10,
+            'message', 'All ten ad clicks recorded. You can now claim your reward.'
+        );
+    END IF;
+
+    RETURN json_build_object(
+        'success', true,
+        'completed', false,
+        'click_count', v_progress.click_count,
+        'required_clicks', 10,
+        'message', format('Ad click recorded (%s/10)', v_progress.click_count)
+    );
+END;
+$$;
+
 -- 6. Row Level Security Policies
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -1375,6 +1463,7 @@ ALTER TABLE public.referrals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.video_watch_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.video_ad_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ads_link_progress ENABLE ROW LEVEL SECURITY;
 
 -- Profiles Policies
 CREATE POLICY "Users can read their own profile" ON public.profiles FOR SELECT TO authenticated USING (auth.uid() = id);
@@ -1446,6 +1535,7 @@ CREATE POLICY "Admins can read analytics" ON public.analytics_events FOR SELECT 
 -- Video Ad Policies
 CREATE POLICY "Users can view own video progress" ON public.video_ad_progress FOR SELECT TO authenticated USING (auth.uid() = user_id);
 CREATE POLICY "Users can view own video sessions" ON public.video_watch_sessions FOR SELECT TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own ads link progress" ON public.ads_link_progress FOR SELECT TO authenticated USING (auth.uid() = user_id);
 
 -- 7. Permissions & Grants
 GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
@@ -1484,6 +1574,7 @@ GRANT EXECUTE ON FUNCTION public.send_user_notification(uuid, text, text, text, 
 GRANT EXECUTE ON FUNCTION public.handle_admin_points_adjustment(uuid, integer, text, text) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.start_video_watch_session(uuid, uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.record_video_watch(uuid, uuid, uuid) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.record_ads_link_click(uuid, uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.is_profile_complete(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.has_completed_social_profile(uuid) TO authenticated, service_role;
 
