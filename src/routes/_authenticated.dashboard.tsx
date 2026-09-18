@@ -162,7 +162,20 @@ function Dashboard() {
         .limit(3);
 
       if (error) throw error;
-      return tasks;
+      const { data: adsLinkProgress } = await (supabase.from("ads_link_progress" as any) as any)
+        .select("task_id, click_count")
+        .eq("user_id", user.id);
+      const progressMap = new Map(
+        (adsLinkProgress as any)?.map((progress: any) => [
+          progress.task_id,
+          progress.click_count,
+        ]),
+      );
+
+      return (tasks || []).map((task: any) => ({
+        ...task,
+        click_count: progressMap.get(task.id) || 0,
+      }));
     },
   });
 
@@ -771,18 +784,30 @@ function Dashboard() {
               const submission = task.task_submissions?.[0];
               const isCompleted =
                 submission?.status === "verified" || submission?.status === "pending";
+              const isAdsLink = task.category === "Ads Link";
+              const clickCount = task.click_count || 0;
+              const isReadyToClaim = isAdsLink && clickCount >= 10 && !isCompleted;
 
               return (
                 <div
                   key={task.id}
-                  className="rounded-3xl p-6 bg-ink-2/60 border border-hairline shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-gold/30 transition-all"
+                  className="rounded-3xl p-6 bg-ink-2/70 border border-hairline shadow-lg flex flex-col justify-between relative overflow-hidden group hover:border-gold/30 transition-all duration-300 backdrop-blur-xl"
                 >
+                  <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-gold/30 to-transparent group-hover:via-gold transition-all" />
                   <div className="space-y-3.5">
-                    <div className="flex items-center justify-between">
-                      <div className="size-11 rounded-2xl bg-gold/10 text-gold flex items-center justify-center border border-gold/20 group-hover:scale-105 transition-transform">
-                        <Zap className="size-5 fill-gold" />
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="inline-flex items-center gap-1 rounded-lg border border-hairline bg-ink-3 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-ink-fg">
+                          {task.category || "General"}
+                        </span>
+                        {task.is_repeatable && (
+                          <span className="inline-flex items-center gap-1 rounded-lg border border-gold/30 bg-gold/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-gold">
+                            Daily
+                          </span>
+                        )}
                       </div>
-                      <Badge className="bg-gold/15 text-gold border-gold/30 font-black text-xs px-3 py-1 rounded-xl font-mono">
+                      <Badge className="bg-gold/15 text-gold border-gold/30 font-black text-xs px-3 py-1 rounded-xl font-mono shrink-0">
+                        <Coins className="size-3.5 mr-1" />
                         +{task.points} PTS
                       </Badge>
                     </div>
@@ -795,6 +820,26 @@ function Dashboard() {
                         {task.description}
                       </p>
                     </div>
+
+                    {isAdsLink && !isCompleted && (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between text-[11px] font-bold text-ink-muted font-mono">
+                          <span>Ad Click Progress</span>
+                          <span className="text-ink-fg">{clickCount} / 10 Clicks</span>
+                        </div>
+                        <div className="w-full bg-ink-3 h-2 rounded-full overflow-hidden border border-hairline">
+                          <div
+                            className="bg-gradient-to-r from-gold to-emerald-400 h-full transition-all duration-500 rounded-full"
+                            style={{ width: `${Math.min(100, (clickCount / 10) * 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-[11px] text-ink-muted font-medium">
+                          {isReadyToClaim
+                            ? "All clicks complete. Claim your reward on the Tasks page."
+                            : `Click the ad link ${10 - clickCount} more time${10 - clickCount === 1 ? "" : "s"} to claim ${task.points} PTS.`}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-5 mt-4 border-t border-hairline">
@@ -809,6 +854,10 @@ function Dashboard() {
                       )}
                       onClick={() => {
                         if (isCompleted || dailyLimitReached) return;
+                        if (isAdsLink) {
+                          window.location.href = "/earn?tab=tasks";
+                          return;
+                        }
                         if (task.link_url) {
                           window.open(task.link_url, "_blank");
                         }
@@ -828,7 +877,7 @@ function Dashboard() {
                         <span>Daily Limit Reached</span>
                       ) : (
                         <span className="flex items-center gap-1">
-                          Start Task
+                          {isReadyToClaim ? "Claim Reward on Tasks Page" : "Start Task"}
                           <ChevronRight className="size-4 ml-1" />
                         </span>
                       )}
