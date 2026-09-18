@@ -95,8 +95,11 @@ function RedeemPage() {
         .from("rewards")
         .select("*")
         .eq("is_active", true)
-        .order("cost_points", { ascending: true });
-      return data || [];
+        .order("cost_points", { ascending: true })
+        .order("title", { ascending: true });
+      return (data || []).sort(
+        (a: any, b: any) => Number(a.cost_points ?? 0) - Number(b.cost_points ?? 0),
+      );
     },
   });
 
@@ -136,12 +139,15 @@ function RedeemPage() {
     },
   ];
 
-  const filteredRewards =
+  const filteredRewards = (
     activeCategory === "All"
       ? rewards
       : activeCategory === "crypto"
         ? rewards?.filter(isRewardCrypto)
-        : rewards?.filter((r: any) => !isRewardCrypto(r));
+        : rewards?.filter((r: any) => !isRewardCrypto(r))
+  )
+    ?.slice()
+    .sort((a: any, b: any) => Number(a.cost_points ?? 0) - Number(b.cost_points ?? 0));
 
   const userBalance = profile?.points_balance || 0;
 
