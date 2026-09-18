@@ -386,6 +386,62 @@ function Dashboard() {
     }
   };
 
+  const handleFeaturedTaskClick = async (task: any) => {
+    if (task.category !== "Ads Link") {
+      if (task.link_url) window.open(task.link_url, "_blank");
+      toast.info("Task opened! Complete it and submit proof on the Earn page.");
+      return;
+    }
+
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+    if (!authUser) {
+      toast.error("You must be signed in to perform this task.");
+      return;
+    }
+
+    if ((task.click_count || 0) >= 10) {
+      const { data, error } = await (supabase.rpc as any)("submit_task", {
+        _user_id: authUser.id,
+        _task_id: task.id,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      if (!(data as any)?.success) {
+        toast.error((data as any)?.message || "Could not claim this reward.");
+        return;
+      }
+
+      confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+      toast.success((data as any).message || `Task completed! +${task.points} points awarded.`);
+      queryClient.invalidateQueries({ queryKey: ["featured-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["daily-task-stats"] });
+      return;
+    }
+
+    if (task.link_url) window.open(task.link_url, "_blank");
+
+    const { data, error } = await (supabase.rpc as any)("record_ads_link_click", {
+      _user_id: authUser.id,
+      _task_id: task.id,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    if (!(data as any)?.success) {
+      toast.error((data as any)?.message || "Could not record ad click.");
+      return;
+    }
+
+    toast.success((data as any).message);
+    queryClient.invalidateQueries({ queryKey: ["featured-tasks"] });
+  };
+
   return (
     <motion.div
       initial="hidden"
@@ -430,31 +486,6 @@ function Dashboard() {
           </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={handleCopyReferral}
-            className="h-11 rounded-xl px-4 text-xs font-bold border border-hairline bg-ink-2/80 text-ink-fg hover:border-gold/30 hover:bg-ink-3 transition-all flex items-center gap-2 cursor-pointer shadow-sm"
-          >
-            {copiedLink ? (
-              <Check className="size-4 text-emerald-400" />
-            ) : (
-              <Copy className="size-4 text-gold" />
-            )}
-            <span>{copiedLink ? "Link Copied!" : "Copy Invite Link"}</span>
-          </button>
-
-          <Button
-            asChild
-            className="h-11 rounded-xl px-5 font-bold bg-gold text-ink hover:bg-gold-soft transition-all text-xs shadow-lg shadow-gold/10 hover:-translate-y-0.5"
-          >
-            <Link to="/earn" search={{ tab: "tasks" }}>
-              <Zap className="size-4 mr-1.5 fill-ink" />
-              Earn Points
-            </Link>
-          </Button>
-        </div>
       </motion.header>
 
       {/* Main Luxury Hero & Balance Showcase */}
@@ -835,7 +866,7 @@ function Dashboard() {
                         </div>
                         <p className="text-[11px] text-ink-muted font-medium">
                           {isReadyToClaim
-                            ? "All clicks complete. Claim your reward on the Tasks page."
+                            ? "All clicks complete. Claim your reward now."
                             : `Click the ad link ${10 - clickCount} more time${10 - clickCount === 1 ? "" : "s"} to claim ${task.points} PTS.`}
                         </p>
                       </div>
@@ -854,14 +885,7 @@ function Dashboard() {
                       )}
                       onClick={() => {
                         if (isCompleted || dailyLimitReached) return;
-                        if (isAdsLink) {
-                          window.location.href = "/earn?tab=tasks";
-                          return;
-                        }
-                        if (task.link_url) {
-                          window.open(task.link_url, "_blank");
-                        }
-                        toast.info("Task opened! Complete it and submit proof on the Earn page.");
+                        void handleFeaturedTaskClick(task);
                       }}
                       disabled={
                         (isCompleted && submission?.status === "verified") ||
