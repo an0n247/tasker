@@ -263,6 +263,7 @@ function EarnPage() {
     const comp: any[] = [];
     const rej: any[] = [];
     const candidates: any[] = [];
+    const adsLinkTasks: any[] = [];
 
     for (const t of tasks as any[]) {
       const isVerifiedToday =
@@ -279,16 +280,17 @@ function EarnPage() {
         inProg.push(t);
       } else if (isRejected) {
         rej.push(t);
+      } else if (t.category === "Ads Link") {
+        adsLinkTasks.push(t);
       } else {
         candidates.push(t);
       }
     }
 
-    // Deterministically randomize candidate tasks per user for today
+    // Ads Link tasks are always available to every user. Only the remaining
+    // daily slots use the per-user deterministic allocation.
     const randomized = seededShuffle(candidates, dailyUserSeed);
-
-    // Select the user's daily 10 allocation
-    const daily10Tasks = randomized.slice(0, 10);
+    const daily10Tasks = [...adsLinkTasks, ...randomized].slice(0, 10);
 
     return {
       availableDailyPool: daily10Tasks,
