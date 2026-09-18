@@ -399,13 +399,6 @@ function HeroSection() {
                 Get Started
                 <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
               </Link>
-              <Link
-                to="/auth"
-                search={{ mode: "login" }}
-                className="inline-flex h-12 flex-1 items-center justify-center rounded-xl border border-hairline bg-ink-2/70 px-4 text-sm font-bold tracking-tight text-ink-fg transition-colors duration-200 hover:border-gold/30 hover:text-gold"
-              >
-                Sign in
-              </Link>
             </div>
 
             <div className="hidden sm:flex sm:items-center sm:gap-3">

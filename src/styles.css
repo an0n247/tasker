@@ -339,6 +339,7 @@
     border-radius: 50%;
     filter: blur(80px);
     opacity: 0.5;
+    pointer-events: none;
     animation: float 20s ease-in-out infinite;
   }
 

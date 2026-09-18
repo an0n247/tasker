@@ -70,16 +70,17 @@ export function LandingNav() {
             </span>
             <Link
               to="/auth"
+              search={{ mode: "signup" }}
               className="hidden text-[13px] font-semibold text-ink-muted transition-colors hover:text-ink-fg sm:block"
             >
-              Sign In
+              Sign Up
             </Link>
             <Link
               to="/auth"
-              search={{ mode: "signup" }}
+              search={{ mode: "login" }}
               className="group inline-flex h-10 items-center gap-1.5 rounded-xl bg-gold px-4 text-[13px] font-bold tracking-tight text-ink transition-transform duration-200 hover:-translate-y-0.5"
             >
-              Get Started
+              Login
               <ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
             </Link>
             <button
@@ -147,18 +148,19 @@ export function LandingNav() {
           <div className="mt-6 grid gap-2.5">
             <Link
               to="/auth"
-              search={{ mode: "signup" }}
+              search={{ mode: "login" }}
               onClick={() => setMobileOpen(false)}
               className="grid h-12 place-items-center rounded-xl bg-gold text-sm font-bold text-ink"
             >
-              Get Started
+              Login
             </Link>
             <Link
               to="/auth"
+              search={{ mode: "signup" }}
               onClick={() => setMobileOpen(false)}
               className="grid h-12 place-items-center rounded-xl border border-hairline text-sm font-semibold text-ink-fg"
             >
-              Sign In
+              Sign Up
             </Link>
           </div>
         </div>

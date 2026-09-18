@@ -31,6 +31,7 @@ import {
   RefreshCw,
   Sparkles,
   Inbox,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -71,6 +72,15 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+interface SavedAccount {
+  id?: string;
+  email: string;
+  username?: string;
+  fullName?: string;
+  avatarUrl?: string | null;
+  savedAt?: number;
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/auth" });
@@ -79,6 +89,8 @@ function AuthPage() {
   );
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [savedAccount, setSavedAccount] = useState<SavedAccount | null>(null);
+  const [useDifferentAccount, setUseDifferentAccount] = useState(false);
   const [email, setEmail] = useState("");
   const [identifier, setIdentifier] = useState(""); // Can be email or username
   const [password, setPassword] = useState("");
@@ -126,6 +138,20 @@ function AuthPage() {
   const [showSignupPassword, setShowSignupPassword] = useState(false);
   const [resending, setResending] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("noble_remembered_account");
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.email) {
+          setSavedAccount(parsed);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not parse remembered account:", e);
+    }
+  }, []);
 
   useEffect(() => {
     if (!showVerification) return;
@@ -350,7 +376,7 @@ function AuthPage() {
       localStorage.removeItem("noble-gain-session-transient");
       sessionStorage.removeItem("noble-gain-session-active");
 
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: signInData, error } = await supabase.auth.signInWithPassword({
         email: loginEmail,
         password,
       });
@@ -395,6 +421,32 @@ function AuthPage() {
         throw error;
       }
 
+      if (rememberMe && signInData?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username, full_name, avatar_url")
+            .eq("id", signInData.user.id)
+            .maybeSingle();
+
+          const accountData: SavedAccount = {
+            id: signInData.user.id,
+            email: signInData.user.email || loginEmail,
+            username: profile?.username || (loginEmail.includes("@") ? "" : identifier),
+            fullName: profile?.full_name || profile?.username || loginEmail.split("@")[0],
+            avatarUrl: profile?.avatar_url || null,
+            savedAt: Date.now(),
+          };
+          localStorage.setItem("noble_remembered_account", JSON.stringify(accountData));
+          setSavedAccount(accountData);
+        } catch (e) {
+          console.warn("Could not cache profile for remember me:", e);
+        }
+      } else if (!rememberMe) {
+        localStorage.removeItem("noble_remembered_account");
+        setSavedAccount(null);
+      }
+
       navigate({ to: (search.redirect as any) || "/dashboard" });
     } catch (error: any) {
       const errorMsg = (error.message || "").toLowerCase();
@@ -424,6 +476,108 @@ function AuthPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSavedAccountLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!savedAccount?.email) return;
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      localStorage.removeItem("noble-gain-session-transient");
+      sessionStorage.removeItem("noble-gain-session-active");
+
+      const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: savedAccount.email,
+        password,
+      });
+
+      if (signInError) {
+        const errorMsg = (signInError.message || "").toLowerCase();
+        const isUnverified =
+          errorMsg.includes("not confirmed") ||
+          errorMsg.includes("not verified") ||
+          errorMsg.includes("unconfirmed") ||
+          errorMsg.includes("unverified") ||
+          errorMsg.includes("confirm your email") ||
+          errorMsg.includes("verify your email") ||
+          (signInError as any)?.code === "email_not_confirmed" ||
+          (signInError as any)?.code === "user_not_confirmed";
+
+        if (isUnverified) {
+          setEmail(savedAccount.email);
+          setShowVerification(true);
+          setVerificationCode("");
+          setError("");
+
+          try {
+            await sendSignupOtp({ data: { email: savedAccount.email } });
+          } catch (otpErr) {
+            console.warn("Custom OTP send note:", otpErr);
+          }
+
+          toast.info("Your email is not verified yet. We have opened the verification page.");
+          return;
+        }
+
+        if (
+          errorMsg.includes("invalid login credentials") ||
+          errorMsg.includes("invalid_grant") ||
+          errorMsg.includes("wrong password")
+        ) {
+          throw new Error("Incorrect password. Please try again.");
+        }
+        throw signInError;
+      }
+
+      if (rememberMe && authData?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username, full_name, avatar_url")
+            .eq("id", authData.user.id)
+            .maybeSingle();
+
+          const updated: SavedAccount = {
+            id: authData.user.id,
+            email: authData.user.email || savedAccount.email,
+            username: profile?.username || savedAccount.username,
+            fullName: profile?.full_name || savedAccount.fullName,
+            avatarUrl: profile?.avatar_url || savedAccount.avatarUrl,
+            savedAt: Date.now(),
+          };
+          localStorage.setItem("noble_remembered_account", JSON.stringify(updated));
+          setSavedAccount(updated);
+        } catch (e) {
+          // ignore
+        }
+      } else if (!rememberMe) {
+        localStorage.removeItem("noble_remembered_account");
+        setSavedAccount(null);
+      }
+
+      navigate({ to: (search.redirect as any) || "/dashboard" });
+    } catch (err: any) {
+      setError(err.message || "Incorrect password. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveSavedAccount = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    localStorage.removeItem("noble_remembered_account");
+    setSavedAccount(null);
+    setUseDifferentAccount(false);
+    setPassword("");
+    setError("");
+    toast.info("Saved account removed.");
   };
 
   const handleEmailSignUp = async (e: React.FormEvent) => {
@@ -712,9 +866,9 @@ function AuthPage() {
   const BackLink = () => (
     <Link
       to="/"
-      className="mb-2 sm:mb-3 inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-muted-foreground transition-colors hover:text-primary"
+      className="relative z-30 mb-2 sm:mb-3 inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-muted-foreground transition-all hover:text-foreground cursor-pointer py-1 px-2.5 -ml-2.5 rounded-xl hover:bg-foreground/5"
     >
-      <ArrowLeft className="h-3.5 w-3.5" />
+      <ArrowLeft className="h-4 w-4" />
       Back to home
     </Link>
   );
@@ -722,9 +876,9 @@ function AuthPage() {
   if (showVerification) {
     return (
       <div className={cn(shellClass, "px-4 sm:px-6")}>
-        <div className="w-full max-w-[94%] sm:max-w-md">
+        <div className="w-full max-w-[94%] sm:max-w-md relative z-10">
           <BackLink />
-          <div className="glass-card rounded-[2rem] p-5 sm:p-7 premium-shadow-lg text-center space-y-4">
+          <div className="rounded-[2rem] border-2 border-border/90 bg-card p-5 sm:p-7 shadow-2xl shadow-black/10 dark:shadow-black/60 text-center space-y-4">
             <Brand />
 
             {/* Rolling Circle Animation with Mail Glow */}
@@ -757,7 +911,7 @@ function AuthPage() {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-border/70 bg-background/80 p-3.5 text-left">
+            <div className="rounded-2xl border-2 border-border/80 bg-background/80 p-3.5 text-left">
               <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
                 Verification code
               </Label>
@@ -765,7 +919,7 @@ function AuthPage() {
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
                 placeholder="Enter code"
-                className="mt-2 h-12 rounded-2xl border-border/70 bg-background text-center text-lg font-black tracking-[0.4em]"
+                className="mt-2 h-12 rounded-2xl border-2 border-border/80 bg-background text-center text-lg font-black tracking-[0.4em] text-foreground focus-visible:border-gold focus-visible:ring-1 focus-visible:ring-gold"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={8}
@@ -773,7 +927,7 @@ function AuthPage() {
             </div>
 
             {error && (
-              <div className="rounded-2xl bg-destructive/10 p-2.5 text-xs sm:text-sm font-bold text-destructive">
+              <div className="rounded-2xl bg-destructive/15 border border-destructive/30 p-2.5 text-xs sm:text-sm font-bold text-destructive">
                 {error}
               </div>
             )}
@@ -798,7 +952,7 @@ function AuthPage() {
                 variant="outline"
                 onClick={handleResendVerificationLink}
                 disabled={resending}
-                className="w-full h-11 rounded-2xl border-border/70 bg-background text-xs sm:text-sm font-bold glass-card hover:bg-primary/5 transition-colors"
+                className="w-full h-11 rounded-2xl border-2 border-border/80 bg-background text-xs sm:text-sm font-bold text-foreground hover:bg-muted/50 transition-colors"
               >
                 {resending ? (
                   <Loader2 className="size-4 animate-spin mr-2" />
@@ -828,23 +982,23 @@ function AuthPage() {
 
   const fieldLabel = "text-xs sm:text-sm font-bold text-foreground";
   const fieldInput =
-    "auth-input h-10 sm:h-11 rounded-2xl border-border/70 bg-background px-3.5 sm:px-4 text-sm sm:text-base glass-card text-left leading-normal";
+    "auth-input h-10 sm:h-11 rounded-2xl border-2 border-border/80 dark:border-border/60 bg-background px-3.5 sm:px-4 text-sm sm:text-base text-foreground placeholder:text-muted-foreground/60 focus-visible:border-gold focus-visible:ring-1 focus-visible:ring-gold text-left leading-normal transition-colors";
 
   return (
     <div className={cn(shellClass, "px-4 sm:px-6")}>
       <div
-        className="floating-blob w-96 h-96 bg-primary/20 top-0 left-0"
+        className="pointer-events-none floating-blob w-96 h-96 bg-primary/20 top-0 left-0"
         style={{ animationDelay: "0s" }}
       />
       <div
-        className="floating-blob w-80 h-80 bg-secondary/20 top-1/3 right-0"
+        className="pointer-events-none floating-blob w-80 h-80 bg-secondary/20 top-1/3 right-0"
         style={{ animationDelay: "-5s" }}
       />
-      <div className="w-full max-w-[94%] sm:max-w-md">
+      <div className="w-full max-w-[94%] sm:max-w-md relative z-10">
         <div className="flex justify-start">
           <BackLink />
         </div>
-        <div className="glass-card rounded-[2rem] p-4 sm:p-6 sm:py-5 premium-shadow-lg">
+        <div className="rounded-[2rem] border-2 border-border/90 bg-card p-5 sm:p-7 sm:py-6 shadow-2xl shadow-black/10 dark:shadow-black/60">
           <Brand />
 
           <h2 className="mt-2 text-center text-lg sm:text-xl font-black tracking-tight text-foreground uppercase">
@@ -853,25 +1007,29 @@ function AuthPage() {
                 ? "Set New Password"
                 : "Reset password"
               : activeTab === "login"
-                ? "Welcome"
+                ? savedAccount && !useDifferentAccount
+                  ? "Welcome Back"
+                  : "Welcome"
                 : "Create account"}
           </h2>
-          <p className="mx-auto mt-0.5 max-w-xs text-center text-xs sm:text-sm leading-snug text-muted-foreground">
+          <p className="mx-auto mt-0.5 max-w-xs text-center text-xs sm:text-sm leading-snug text-muted-foreground font-medium">
             {showReset
               ? resetStep === "verify"
                 ? "Enter the 6-digit recovery code and choose your new password."
                 : "Enter your email or username and we'll send you a 6-digit recovery code."
               : activeTab === "login"
-                ? "Sign in to track your points and rewards."
+                ? savedAccount && !useDifferentAccount
+                  ? "Sign in with your saved account password."
+                  : "Sign in to track your points and rewards."
                 : "Join Noble Gain and start earning points from simple tasks."}
           </p>
 
-          {!showReset && (
+          {!showReset && (!savedAccount || useDifferentAccount || activeTab === "signup") && (
             <>
               <Button
                 variant="outline"
                 onClick={handleGoogleLogin}
-                className="mt-3.5 sm:mt-4 h-10 sm:h-11 w-full rounded-2xl border-border/70 bg-background text-xs sm:text-sm font-bold glass-card hover:bg-primary/5 transition-colors"
+                className="mt-3.5 sm:mt-4 h-10 sm:h-11 w-full rounded-2xl border-2 border-border/80 bg-background text-xs sm:text-sm font-bold text-foreground hover:bg-muted/50 transition-colors"
               >
                 <img
                   src="https://www.google.com/favicon.ico"
@@ -883,7 +1041,7 @@ function AuthPage() {
 
               <div className="relative my-2.5 sm:my-3.5">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border/70" />
+                  <span className="w-full border-t border-border/80" />
                 </div>
                 <div className="relative flex justify-center">
                   <span className="bg-card px-2.5 text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-bold">
@@ -895,7 +1053,7 @@ function AuthPage() {
           )}
 
           {error && (
-            <div className="mb-3 rounded-2xl bg-destructive/10 p-2.5 text-sm font-bold text-destructive flex flex-col gap-1.5">
+            <div className="mb-3 rounded-2xl bg-destructive/15 border border-destructive/30 p-3 text-sm font-bold text-destructive flex flex-col gap-1.5 shadow-sm">
               <div>{error}</div>
               {(error.toLowerCase().includes("confirm") ||
                 error.toLowerCase().includes("verif") ||
@@ -948,7 +1106,7 @@ function AuthPage() {
                 <div className="pt-1">
                   <Button
                     type="submit"
-                    className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold premium-shadow hover:scale-105 transition-transform"
+                    className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold bg-gold text-ink hover:bg-gold-soft transition-transform hover:scale-[1.02] shadow-md shadow-gold/20"
                     disabled={resetLoading}
                   >
                     {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -969,7 +1127,7 @@ function AuthPage() {
               </form>
             ) : (
               <form onSubmit={handleVerifyAndResetPassword} className="space-y-3 sm:space-y-3.5">
-                <div className="rounded-2xl border border-border/70 bg-background/80 p-3 text-left">
+                <div className="rounded-2xl border-2 border-border/80 bg-background/80 p-3 text-left">
                   <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
                     Code sent to
                   </div>
@@ -987,7 +1145,7 @@ function AuthPage() {
                     value={resetOtp}
                     onChange={(e) => setResetOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                     placeholder="Enter code"
-                    className="h-11 rounded-2xl border-border/70 bg-background text-center text-lg font-black tracking-[0.4em]"
+                    className="h-11 rounded-2xl border-2 border-border/80 bg-background text-center text-lg font-black tracking-[0.4em] text-foreground focus-visible:border-gold focus-visible:ring-1 focus-visible:ring-gold"
                     inputMode="numeric"
                     autoComplete="one-time-code"
                     maxLength={8}
@@ -1056,7 +1214,7 @@ function AuthPage() {
                 <div className="pt-1 space-y-2">
                   <Button
                     type="submit"
-                    className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold premium-shadow hover:scale-105 transition-transform"
+                    className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold bg-gold text-ink hover:bg-gold-soft transition-transform hover:scale-[1.02] shadow-md shadow-gold/20"
                     disabled={resetLoading}
                   >
                     {resetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -1068,7 +1226,7 @@ function AuthPage() {
                     variant="outline"
                     onClick={handleResendResetOtp}
                     disabled={resendingResetOtp}
-                    className="w-full h-10 sm:h-11 rounded-2xl border-border/70 bg-background text-xs sm:text-sm font-bold glass-card hover:bg-primary/5 transition-colors"
+                    className="w-full h-10 sm:h-11 rounded-2xl border-2 border-border/80 bg-background text-xs sm:text-sm font-bold text-foreground hover:bg-muted/50 transition-colors"
                   >
                     {resendingResetOtp ? (
                       <Loader2 className="size-4 animate-spin mr-2" />
@@ -1107,125 +1265,276 @@ function AuthPage() {
           ) : (
             <div className="mt-2.5 sm:mt-3.5 w-full">
               {activeTab === "login" ? (
-                <div className="space-y-3 sm:space-y-3.5">
-                  <form onSubmit={handleEmailLogin} className="space-y-3 sm:space-y-3.5">
-                    <div className="space-y-1 sm:space-y-1.5">
-                      <Label htmlFor="identifier" className={fieldLabel}>
-                        Email or username
-                      </Label>
-                      <Input
-                        id="identifier"
-                        className={fieldInput}
-                        autoCapitalize="none"
-                        placeholder="Enter email or username"
-                        value={identifier}
-                        onChange={(e) => setIdentifier(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="space-y-1 sm:space-y-1.5">
-                      <Label htmlFor="password" className={fieldLabel}>
-                        Password
-                      </Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          type={showPassword ? "text" : "password"}
-                          className={cn(fieldInput, "pr-12")}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
-                          aria-label={showPassword ? "Hide password" : "Show password"}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-0.5">
-                      <div className="flex items-center gap-1.5 sm:gap-2">
-                        <Checkbox
-                          id="rememberMe"
-                          checked={rememberMe}
-                          onCheckedChange={(checked) => setRememberMe(checked === true)}
-                        />
-                        <Label
-                          htmlFor="rememberMe"
-                          className="cursor-pointer text-xs sm:text-sm font-medium text-muted-foreground"
-                        >
-                          Remember me
-                        </Label>
-                      </div>
+                savedAccount && !useDifferentAccount ? (
+                  <div className="space-y-4">
+                    <div className="relative rounded-3xl border-2 border-border/80 bg-background/70 p-4 sm:p-5 text-center shadow-sm">
+                      {/* Remove Account 'X' button */}
                       <button
                         type="button"
-                        className="text-xs sm:text-sm font-semibold text-primary hover:underline"
+                        onClick={handleRemoveSavedAccount}
+                        title="Remove account from this device"
+                        aria-label="Remove account"
+                        className="absolute right-3 top-3 grid size-7 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive cursor-pointer"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+
+                      {/* Avatar */}
+                      <div className="mx-auto flex justify-center">
+                        {savedAccount.avatarUrl ? (
+                          <img
+                            src={savedAccount.avatarUrl}
+                            alt={savedAccount.fullName || "User"}
+                            className="size-20 sm:size-24 rounded-full object-cover ring-4 ring-gold/40 shadow-xl"
+                          />
+                        ) : (
+                          <div className="grid size-20 sm:size-24 place-items-center rounded-full bg-gradient-to-tr from-gold to-amber-300 font-black text-2xl sm:text-3xl text-ink uppercase ring-4 ring-gold/40 shadow-xl">
+                            {(savedAccount.fullName || savedAccount.username || savedAccount.email || "U")
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Name and email */}
+                      <h3 className="mt-3 truncate text-lg sm:text-xl font-black tracking-tight text-foreground">
+                        {savedAccount.fullName || savedAccount.username || savedAccount.email.split("@")[0]}
+                      </h3>
+                      <p className="truncate text-xs font-semibold text-muted-foreground mt-0.5">
+                        {savedAccount.email}
+                      </p>
+
+                      {/* Password-only form */}
+                      <form onSubmit={handleSavedAccountLogin} className="mt-4 space-y-3.5 text-left">
+                        <div className="space-y-1 sm:space-y-1.5">
+                          <Label htmlFor="saved-password" className={fieldLabel}>
+                            Password
+                          </Label>
+                          <div className="relative">
+                            <Input
+                              id="saved-password"
+                              type={showPassword ? "text" : "password"}
+                              autoFocus
+                              className={cn(fieldInput, "pr-12")}
+                              placeholder="Enter password"
+                              value={password}
+                              onChange={(e) => setPassword(e.target.value)}
+                              required
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                              aria-label={showPassword ? "Hide password" : "Show password"}
+                            >
+                              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-0.5">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <Checkbox
+                              id="savedRememberMe"
+                              checked={rememberMe}
+                              onCheckedChange={(checked) => setRememberMe(checked === true)}
+                            />
+                            <Label
+                              htmlFor="savedRememberMe"
+                              className="cursor-pointer text-xs sm:text-sm font-medium text-muted-foreground"
+                            >
+                              Remember me
+                            </Label>
+                          </div>
+                          <button
+                            type="button"
+                            className="text-xs sm:text-sm font-semibold text-primary hover:underline cursor-pointer"
+                            onClick={() => {
+                              setShowReset(true);
+                              setResetStep("request");
+                              setResetEmail(savedAccount.email);
+                              setResetOtp("");
+                              setError("");
+                            }}
+                          >
+                            Forgot password?
+                          </button>
+                        </div>
+
+                        <Button
+                          type="submit"
+                          className="h-11 sm:h-12 w-full rounded-2xl bg-gold text-ink hover:bg-gold-soft text-sm sm:text-base font-bold shadow-lg shadow-gold/20 hover:scale-[1.02] transition-transform"
+                          disabled={loading}
+                        >
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Log In
+                        </Button>
+                      </form>
+                    </div>
+
+                    {/* Option to switch to different account */}
+                    <div className="flex flex-col gap-2 pt-1 text-center">
+                      <Button
+                        type="button"
+                        variant="outline"
                         onClick={() => {
-                          setShowReset(true);
-                          setResetStep("request");
-                          setResetEmail(identifier.trim());
-                          setResetOtp("");
+                          setUseDifferentAccount(true);
+                          setPassword("");
+                          setError("");
+                        }}
+                        className="h-10 sm:h-11 w-full rounded-2xl border-2 border-border/80 bg-background text-xs sm:text-sm font-bold text-foreground hover:bg-muted/50 transition-colors"
+                      >
+                        <User className="size-4 mr-2 text-muted-foreground" />
+                        Log in to another account
+                      </Button>
+
+                      <p className="text-center text-xs sm:text-sm font-bold text-muted-foreground pt-1">
+                        Don't have an account?{" "}
+                        <button
+                          type="button"
+                          className="font-bold text-primary hover:underline transition-colors cursor-pointer"
+                          onClick={() => setActiveTab("signup")}
+                        >
+                          Sign up
+                        </button>
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3 sm:space-y-3.5">
+                    {savedAccount && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUseDifferentAccount(false);
+                          setPassword("");
+                          setError("");
+                        }}
+                        className="mb-1.5 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline cursor-pointer"
+                      >
+                        <ArrowLeft className="size-3.5" />
+                        Back to {savedAccount.fullName || savedAccount.username || savedAccount.email}
+                      </button>
+                    )}
+                    <form onSubmit={handleEmailLogin} className="space-y-3 sm:space-y-3.5">
+                      <div className="space-y-1 sm:space-y-1.5">
+                        <Label htmlFor="identifier" className={fieldLabel}>
+                          Email or username
+                        </Label>
+                        <Input
+                          id="identifier"
+                          className={fieldInput}
+                          autoCapitalize="none"
+                          placeholder="Enter email or username"
+                          value={identifier}
+                          onChange={(e) => setIdentifier(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1 sm:space-y-1.5">
+                        <Label htmlFor="password" className={fieldLabel}>
+                          Password
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={showPassword ? "text" : "password"}
+                            className={cn(fieldInput, "pr-12")}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                            aria-label={showPassword ? "Hide password" : "Show password"}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-0.5">
+                        <div className="flex items-center gap-1.5 sm:gap-2">
+                          <Checkbox
+                            id="rememberMe"
+                            checked={rememberMe}
+                            onCheckedChange={(checked) => setRememberMe(checked === true)}
+                          />
+                          <Label
+                            htmlFor="rememberMe"
+                            className="cursor-pointer text-xs sm:text-sm font-medium text-muted-foreground"
+                          >
+                            Remember me
+                          </Label>
+                        </div>
+                        <button
+                          type="button"
+                          className="text-xs sm:text-sm font-semibold text-primary hover:underline"
+                          onClick={() => {
+                            setShowReset(true);
+                            setResetStep("request");
+                            setResetEmail(identifier.trim());
+                            setResetOtp("");
+                            setError("");
+                          }}
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+
+                      <div className="pt-1">
+                        <Button
+                          type="submit"
+                          className="h-10 sm:h-11 w-full rounded-2xl bg-gold text-ink hover:bg-gold-soft text-sm sm:text-base font-bold shadow-md shadow-gold/20 hover:scale-[1.02] transition-transform"
+                          disabled={loading}
+                        >
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Sign in
+                        </Button>
+                      </div>
+                    </form>
+                    <p className="text-center text-xs sm:text-sm font-bold text-muted-foreground pt-0.5">
+                      Don't have an account?{" "}
+                      <button
+                        type="button"
+                        className="font-bold text-primary hover:underline transition-colors cursor-pointer"
+                        onClick={() => setActiveTab("signup")}
+                      >
+                        Sign up
+                      </button>
+                    </p>
+                    <p className="text-center text-xs text-muted-foreground">
+                      Already registered but not verified?{" "}
+                      <button
+                        type="button"
+                        className="font-bold text-primary hover:underline transition-colors cursor-pointer"
+                        onClick={async () => {
+                          let target = identifier.trim();
+                          if (target && !target.includes("@")) {
+                            const { data } = await supabase.rpc("lookup_login_email", {
+                              _username: target,
+                            });
+                            if (data) target = data;
+                          }
+                          if (target) {
+                            setEmail(target);
+                          }
+                          setShowVerification(true);
+                          setVerificationCode("");
                           setError("");
                         }}
                       >
-                        Forgot password?
+                        Enter verification code
                       </button>
-                    </div>
-
-                    <div className="pt-1">
-                      <Button
-                        type="submit"
-                        className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold premium-shadow hover:scale-105 transition-transform"
-                        disabled={loading}
-                      >
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Sign in
-                      </Button>
-                    </div>
-                  </form>
-                  <p className="text-center text-xs sm:text-sm font-bold text-muted-foreground pt-0.5">
-                    Don't have an account?{" "}
-                    <button
-                      type="button"
-                      className="font-bold text-primary hover:underline transition-colors cursor-pointer"
-                      onClick={() => setActiveTab("signup")}
-                    >
-                      Sign up
-                    </button>
-                  </p>
-                  <p className="text-center text-xs text-muted-foreground">
-                    Already registered but not verified?{" "}
-                    <button
-                      type="button"
-                      className="font-bold text-primary hover:underline transition-colors cursor-pointer"
-                      onClick={async () => {
-                        let target = identifier.trim();
-                        if (target && !target.includes("@")) {
-                          const { data } = await supabase.rpc("lookup_login_email", {
-                            _username: target,
-                          });
-                          if (data) target = data;
-                        }
-                        if (target) {
-                          setEmail(target);
-                        }
-                        setShowVerification(true);
-                        setVerificationCode("");
-                        setError("");
-                      }}
-                    >
-                      Enter verification code
-                    </button>
-                  </p>
-                </div>
+                    </p>
+                  </div>
+                )
               ) : (
                 <div className="space-y-3 sm:space-y-3.5">
                   <form onSubmit={handleEmailSignUp} className="space-y-3 sm:space-y-3.5">
@@ -1416,7 +1725,7 @@ function AuthPage() {
                     <div className="pt-1">
                       <Button
                         type="submit"
-                        className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold premium-shadow hover:scale-105 transition-transform"
+                        className="h-10 sm:h-11 w-full rounded-2xl text-sm sm:text-base font-bold bg-gold text-ink hover:bg-gold-soft transition-transform hover:scale-[1.02] shadow-md shadow-gold/20"
                         disabled={loading || !agreedToTerms}
                       >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
