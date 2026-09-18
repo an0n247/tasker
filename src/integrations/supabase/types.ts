@@ -339,39 +339,48 @@ export type Database = {
       redemptions: {
         Row: {
           created_at: string
+          delivery_email: string | null
           fraud_details: Json | null
           fraud_score: number | null
           id: string
           is_flagged: boolean | null
+          payout_network: string | null
           rejection_reason: string | null
           reward_id: string
           status: string
           updated_at: string | null
           user_id: string
+          wallet_address: string | null
         }
         Insert: {
           created_at?: string
+          delivery_email?: string | null
           fraud_details?: Json | null
           fraud_score?: number | null
           id?: string
           is_flagged?: boolean | null
+          payout_network?: string | null
           rejection_reason?: string | null
           reward_id: string
           status?: string
           updated_at?: string | null
           user_id: string
+          wallet_address?: string | null
         }
         Update: {
           created_at?: string
+          delivery_email?: string | null
           fraud_details?: Json | null
           fraud_score?: number | null
           id?: string
           is_flagged?: boolean | null
+          payout_network?: string | null
           rejection_reason?: string | null
           reward_id?: string
           status?: string
           updated_at?: string | null
           user_id?: string
+          wallet_address?: string | null
         }
         Relationships: [
           {
@@ -1030,7 +1039,14 @@ export type Database = {
         Args: { _session_id: string; _task_id: string; _user_id: string }
         Returns: Json
       }
-      redeem_reward: { Args: { _reward_id: string }; Returns: Json }
+      redeem_reward: {
+        Args: {
+          _reward_id: string
+          _wallet_address?: string | null
+          _delivery_email?: string | null
+        }
+        Returns: Json
+      }
       send_user_notification:
         | {
             Args: {

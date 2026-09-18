@@ -19,8 +19,8 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated.admin'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedEarnRouteImport } from './routes/_authenticated.earn'
-import { Route as AuthenticatedModeratorRouteImport } from './routes/_authenticated.moderator'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated.messages'
+import { Route as AuthenticatedModeratorRouteImport } from './routes/_authenticated.moderator'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedRedeemRouteImport } from './routes/_authenticated.redeem'
 import { Route as AuthenticatedReferRouteImport } from './routes/_authenticated.refer'
@@ -82,14 +82,14 @@ const AuthenticatedEarnRoute = AuthenticatedEarnRouteImport.update({
   path: '/earn',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedModeratorRoute = AuthenticatedModeratorRouteImport.update({
-  id: '/moderator',
-  path: '/moderator',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
   id: '/messages',
   path: '/messages',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedModeratorRoute = AuthenticatedModeratorRouteImport.update({
+  id: '/moderator',
+  path: '/moderator',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
@@ -385,18 +385,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEarnRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/moderator': {
-      id: '/_authenticated/moderator'
-      path: '/moderator'
-      fullPath: '/moderator'
-      preLoaderRoute: typeof AuthenticatedModeratorRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/messages': {
       id: '/_authenticated/messages'
       path: '/messages'
       fullPath: '/messages'
       preLoaderRoute: typeof AuthenticatedMessagesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/moderator': {
+      id: '/_authenticated/moderator'
+      path: '/moderator'
+      fullPath: '/moderator'
+      preLoaderRoute: typeof AuthenticatedModeratorRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/profile': {

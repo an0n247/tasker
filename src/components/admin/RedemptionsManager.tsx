@@ -30,7 +30,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { Check, X, Loader2, Search, Filter, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, X, Loader2, Search, Filter, ChevronLeft, ChevronRight, Copy, Coins, Mail, Gift } from "lucide-react";
 import { format } from "date-fns";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -50,7 +50,7 @@ export function RedemptionsManager() {
         `
           *,
           profiles:user_id(id, full_name, email, username, phone_number, twitter_handle, telegram_handle),
-          rewards:reward_id(title, cost_points)
+          rewards:reward_id(title, cost_points, category)
         `,
         { count: "exact" },
       );
@@ -233,7 +233,57 @@ export function RedemptionsManager() {
                     )}
                   </TableCell>
                   <TableCell className="px-6 py-4 font-medium">
-                    <div>{r.rewards?.title}</div>
+                    <div className="font-bold text-foreground">{r.rewards?.title}</div>
+                    
+                    {/* Payout Destination */}
+                    {r.wallet_address ? (
+                      <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/25 max-w-[260px]">
+                        <div className="flex items-center justify-between gap-1 text-[10px] font-black text-amber-500 uppercase tracking-wider">
+                          <span className="flex items-center gap-1">
+                            <Coins className="size-3" /> USDT (TRC20)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(r.wallet_address);
+                              toast.success("Wallet address copied!");
+                            }}
+                            className="hover:text-amber-400 p-0.5 text-amber-500 cursor-pointer"
+                            title="Copy wallet address"
+                          >
+                            <Copy className="size-3" />
+                          </button>
+                        </div>
+                        <div className="font-mono text-[11px] break-all select-all text-foreground mt-0.5">
+                          {r.wallet_address}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-2 p-2 rounded-lg bg-primary/10 border border-primary/25 max-w-[260px]">
+                        <div className="flex items-center justify-between gap-1 text-[10px] font-black text-primary uppercase tracking-wider">
+                          <span className="flex items-center gap-1">
+                            <Mail className="size-3" /> Delivery Email
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(r.delivery_email || r.profiles?.email || "");
+                              toast.success("Email address copied!");
+                            }}
+                            className="hover:text-primary/80 p-0.5 text-primary cursor-pointer"
+                            title="Copy delivery email"
+                          >
+                            <Copy className="size-3" />
+                          </button>
+                        </div>
+                        <div className="font-mono text-[11px] break-all select-all text-foreground mt-0.5">
+                          {r.delivery_email || r.profiles?.email || "Registered Email"}
+                        </div>
+                      </div>
+                    )}
+
                     {r.rejection_reason && (
                       <div className="text-[10px] text-destructive font-bold uppercase tracking-tighter mt-1">
                         Reason: {r.rejection_reason}
@@ -301,6 +351,51 @@ export function RedemptionsManager() {
                               </span>
                               .
                             </div>
+
+                            {/* Payout Destination Info Box */}
+                            {r.wallet_address ? (
+                              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-1 text-left">
+                                <div className="flex items-center justify-between text-xs font-bold text-amber-500">
+                                  <span className="flex items-center gap-1.5">
+                                    <Coins className="size-3.5" /> Payout Destination (USDT TRC20)
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(r.wallet_address);
+                                      toast.success("Wallet address copied!");
+                                    }}
+                                    className="hover:text-amber-400 p-0.5 cursor-pointer"
+                                  >
+                                    <Copy className="size-3.5" />
+                                  </button>
+                                </div>
+                                <div className="font-mono text-xs break-all select-all text-foreground">
+                                  {r.wallet_address}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="p-3 rounded-xl bg-primary/10 border border-primary/25 space-y-1 text-left">
+                                <div className="flex items-center justify-between text-xs font-bold text-primary">
+                                  <span className="flex items-center gap-1.5">
+                                    <Mail className="size-3.5" /> Delivery Destination (Email)
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(r.delivery_email || r.profiles?.email || "");
+                                      toast.success("Email address copied!");
+                                    }}
+                                    className="hover:text-primary/80 p-0.5 cursor-pointer"
+                                  >
+                                    <Copy className="size-3.5" />
+                                  </button>
+                                </div>
+                                <div className="font-mono text-xs break-all select-all text-foreground">
+                                  {r.delivery_email || r.profiles?.email || "Registered Email"}
+                                </div>
+                              </div>
+                            )}
 
                             <div className="space-y-2">
                               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">

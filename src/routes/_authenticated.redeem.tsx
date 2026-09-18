@@ -4,9 +4,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Gift,
   Coins,
-  ShoppingBag,
-  CreditCard,
-  Ticket,
   ArrowRight,
   Wallet,
   History as HistoryIcon,
@@ -14,13 +11,14 @@ import {
   Sparkles,
   ShieldCheck,
   CheckCircle2,
-  AlertCircle,
-  ExternalLink,
-  ChevronRight,
   Filter,
+  Mail,
+  ClipboardPaste,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -33,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/_authenticated/redeem")({
   head: () => ({
@@ -42,13 +40,13 @@ export const Route = createFileRoute("/_authenticated/redeem")({
       {
         name: "description",
         content:
-          "Exchange your hard-earned Noble Gain points for premium gift cards, vouchers, and exclusive products in our rewards marketplace.",
+          "Exchange your hard-earned Noble Gain points for cryptocurrency (USDT TRC20) and premium digital gift cards.",
       },
-      { property: "og:title", content: "Redeem Points | Noble Gain Marketplace" },
+      { property: "og:title", content: "Redeem Points | Noble Gain Rewards" },
       {
         property: "og:description",
         content:
-          "Turn your points into real-world rewards. Browse our catalog of gift cards and premium vouchers.",
+          "Turn your points into real-world rewards. Choose between instant crypto withdrawals and digital gift cards.",
       },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "/logo.png" },
@@ -75,9 +73,18 @@ const staggerContainer = {
   },
 };
 
+function isRewardCrypto(reward: any): boolean {
+  if (!reward) return false;
+  const category = (reward.category || "").toLowerCase();
+  const title = (reward.title || "").toLowerCase();
+  return category.includes("crypto") || title.includes("crypto") || title.includes("usdt");
+}
+
 function RedeemPage() {
-  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCategory, setActiveCategory] = useState<"crypto" | "giftcard" | "All">("All");
   const [selectedReward, setSelectedReward] = useState<any>(null);
+  const [walletAddress, setWalletAddress] = useState("");
+  const [walletError, setWalletError] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
   const queryClient = useQueryClient();
 
@@ -105,27 +112,94 @@ function RedeemPage() {
     },
   });
 
+  const cryptoCount = rewards?.filter(isRewardCrypto).length || 0;
+  const giftCardCount = rewards?.filter((r) => !isRewardCrypto(r)).length || 0;
+
   const categories = [
-    { name: "All", icon: Sparkles },
-    { name: "Gift Cards", icon: CreditCard },
-    { name: "Vouchers", icon: Ticket },
-    { name: "Products", icon: ShoppingBag },
+    {
+      id: "All" as const,
+      name: "All Rewards",
+      badge: `${rewards?.length || 0}`,
+      icon: Sparkles,
+    },
+    {
+      id: "crypto" as const,
+      name: "Crypto Rewards",
+      badge: "USDT (TRC20)",
+      icon: Coins,
+    },
+    {
+      id: "giftcard" as const,
+      name: "Gift Card Rewards",
+      badge: "Email Delivery",
+      icon: Gift,
+    },
   ];
 
   const filteredRewards =
     activeCategory === "All"
       ? rewards
-      : rewards?.filter((r: any) => r.category?.toLowerCase() === activeCategory.toLowerCase());
+      : activeCategory === "crypto"
+        ? rewards?.filter(isRewardCrypto)
+        : rewards?.filter((r: any) => !isRewardCrypto(r));
 
   const userBalance = profile?.points_balance || 0;
 
+  const handleOpenReward = (reward: any) => {
+    setSelectedReward(reward);
+    setWalletAddress("");
+    setWalletError("");
+  };
+
+  const validateWalletAddress = (addr: string): boolean => {
+    const trimmed = addr.trim();
+    if (!trimmed) {
+      setWalletError("USDT (TRC20) wallet address is required.");
+      return false;
+    }
+    if (!trimmed.startsWith("T")) {
+      setWalletError("TRC20 wallet addresses must begin with the letter 'T'.");
+      return false;
+    }
+    if (trimmed.length < 25 || trimmed.length > 50) {
+      setWalletError("Invalid TRC20 wallet length (expected 34 characters).");
+      return false;
+    }
+    setWalletError("");
+    return true;
+  };
+
+  const handlePasteAddress = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        setWalletAddress(text.trim());
+        validateWalletAddress(text.trim());
+        toast.success("Wallet address pasted!");
+      }
+    } catch {
+      toast.error("Clipboard permission denied. Please paste manually.");
+    }
+  };
+
   const handleRedeem = async () => {
     if (!selectedReward || !profile) return;
+
+    const isCrypto = isRewardCrypto(selectedReward);
+    if (isCrypto) {
+      const valid = validateWalletAddress(walletAddress);
+      if (!valid) {
+        toast.error("Please enter a valid USDT TRC20 wallet address.");
+        return;
+      }
+    }
 
     setIsRedeeming(true);
     try {
       const { data, error } = await supabase.rpc("redeem_reward", {
         _reward_id: selectedReward.id,
+        _wallet_address: isCrypto ? walletAddress.trim() : null,
+        _delivery_email: !isCrypto ? profile.email : null,
       });
 
       if (error) throw error;
@@ -143,21 +217,32 @@ function RedeemPage() {
         origin: { y: 0.6 },
       });
 
-      toast.success(
-        "Redemption request submitted! Details will be sent to your registered email address.",
-      );
+      if (isCrypto) {
+        toast.success(
+          "Crypto redemption submitted! Payout will be sent to your USDT TRC20 wallet upon approval.",
+        );
+      } else {
+        toast.success(
+          `Gift card request submitted! Digital voucher will be delivered to ${profile.email}.`,
+        );
+      }
+
       setSelectedReward(null);
+      setWalletAddress("");
+      setWalletError("");
 
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["redemptions"] });
       queryClient.invalidateQueries({ queryKey: ["rewards"] });
     } catch (error: any) {
       console.error("Redemption error:", error);
-      toast.error("Failed to redeem reward. Please try again.");
+      toast.error(error?.message || "Failed to redeem reward. Please try again.");
     } finally {
       setIsRedeeming(false);
     }
   };
+
+  const isSelectedCrypto = selectedReward ? isRewardCrypto(selectedReward) : false;
 
   return (
     <motion.div
@@ -179,14 +264,14 @@ function RedeemPage() {
             <Gift className="size-3.5" />
             <span>Rewards Bazaar</span>
             <span className="text-hairline">•</span>
-            <span className="text-ink-fg/70 font-medium">Instant Redemption</span>
+            <span className="text-ink-fg/70 font-medium">Crypto & Gift Cards</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black tracking-[-0.04em] text-ink-fg">
             Redeem <span className="text-gold">Rewards</span>
           </h1>
           <p className="text-sm font-medium text-ink-muted">
-            Exchange your earned points for verified digital gift cards, cash vouchers, and
-            exclusive perks.
+            Exchange your earned points for cryptocurrency (USDT TRC20) or verified digital gift
+            cards.
           </p>
         </div>
 
@@ -225,17 +310,17 @@ function RedeemPage() {
         className="flex gap-2 overflow-x-auto pb-1 scrollbar-none items-center"
       >
         <span className="text-xs font-bold uppercase tracking-wider text-ink-muted hidden sm:inline mr-1 flex items-center gap-1">
-          <Filter className="size-3.5" /> Filter:
+          <Filter className="size-3.5" /> Category:
         </span>
         {categories.map((cat) => {
-          const isActive = activeCategory === cat.name;
+          const isActive = activeCategory === cat.id;
           return (
             <button
-              key={cat.name}
+              key={cat.id}
               type="button"
-              onClick={() => setActiveCategory(cat.name)}
+              onClick={() => setActiveCategory(cat.id)}
               className={cn(
-                "rounded-xl font-bold h-10 px-4 text-xs shrink-0 transition-all flex items-center gap-2 border cursor-pointer",
+                "rounded-xl font-bold h-11 px-4 text-xs shrink-0 transition-all flex items-center gap-2.5 border cursor-pointer",
                 isActive
                   ? "bg-gold text-ink font-black border-gold shadow-md shadow-gold/10"
                   : "bg-ink-2/60 border-hairline text-ink-muted hover:text-ink-fg hover:bg-ink-3",
@@ -243,6 +328,14 @@ function RedeemPage() {
             >
               <cat.icon className={cn("size-4", isActive ? "text-ink" : "text-gold")} />
               <span>{cat.name}</span>
+              <span
+                className={cn(
+                  "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider",
+                  isActive ? "bg-ink/20 text-ink" : "bg-ink-3 text-ink-muted border border-hairline",
+                )}
+              >
+                {cat.badge}
+              </span>
             </button>
           );
         })}
@@ -254,6 +347,7 @@ function RedeemPage() {
           ? filteredRewards.map((reward) => {
               const canAfford = userBalance >= reward.cost_points;
               const pointsNeeded = Math.max(0, reward.cost_points - userBalance);
+              const isCrypto = isRewardCrypto(reward);
 
               return (
                 <div
@@ -271,7 +365,11 @@ function RedeemPage() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-ink-muted/30">
-                          <Gift className="size-14 text-gold/30" />
+                          {isCrypto ? (
+                            <Coins className="size-14 text-amber-400/40" />
+                          ) : (
+                            <Gift className="size-14 text-gold/30" />
+                          )}
                         </div>
                       )}
 
@@ -285,8 +383,20 @@ function RedeemPage() {
 
                       {/* Category Chip */}
                       <div className="absolute bottom-3.5 left-3.5">
-                        <span className="bg-ink/90 backdrop-blur-md text-ink-fg border border-hairline font-bold uppercase text-[10px] tracking-wider rounded-lg px-2.5 py-1">
-                          {reward.category || "General"}
+                        <span
+                          className={cn(
+                            "backdrop-blur-md font-bold uppercase text-[10px] tracking-wider rounded-lg px-2.5 py-1 flex items-center gap-1.5 border",
+                            isCrypto
+                              ? "bg-ink/90 text-amber-400 border-amber-500/30"
+                              : "bg-ink/90 text-gold border-gold/30",
+                          )}
+                        >
+                          {isCrypto ? (
+                            <Coins className="size-3 text-amber-400" />
+                          ) : (
+                            <Gift className="size-3 text-gold" />
+                          )}
+                          <span>{isCrypto ? "Crypto (USDT TRC20)" : "Gift Card"}</span>
                         </span>
                       </div>
                     </div>
@@ -298,7 +408,9 @@ function RedeemPage() {
                       </h3>
                       <p className="text-xs font-medium text-ink-muted line-clamp-2 leading-relaxed">
                         {reward.description ||
-                          "Digital voucher delivered instantly upon verification."}
+                          (isCrypto
+                            ? "Crypto payout sent to your TRC20 wallet upon security review."
+                            : "Digital voucher delivered directly to your registered email address.")}
                       </p>
                     </div>
                   </div>
@@ -309,15 +421,27 @@ function RedeemPage() {
                       className={cn(
                         "w-full rounded-xl font-bold h-11 text-xs transition-all shadow-md cursor-pointer",
                         canAfford
-                          ? "bg-gold text-ink hover:bg-gold-soft hover:-translate-y-0.5 shadow-gold/10 font-black"
+                          ? isCrypto
+                            ? "bg-amber-500 text-ink hover:bg-amber-400 font-black shadow-amber-500/10"
+                            : "bg-gold text-ink hover:bg-gold-soft font-black shadow-gold/10"
                           : "bg-ink-3 text-ink-muted border border-hairline hover:bg-ink-3/80 shadow-none cursor-not-allowed",
                       )}
                       disabled={!canAfford}
-                      onClick={() => setSelectedReward(reward)}
+                      onClick={() => handleOpenReward(reward)}
                     >
                       {canAfford ? (
                         <span className="flex items-center gap-1.5">
-                          <span>Redeem Reward</span>
+                          {isCrypto ? (
+                            <>
+                              <Coins className="size-3.5" />
+                              <span>Withdraw Crypto</span>
+                            </>
+                          ) : (
+                            <>
+                              <Gift className="size-3.5" />
+                              <span>Redeem Gift Card</span>
+                            </>
+                          )}
                           <ArrowRight className="size-3.5" />
                         </span>
                       ) : (
@@ -331,13 +455,23 @@ function RedeemPage() {
           : !isLoading && (
               <div className="col-span-full rounded-3xl border border-hairline bg-ink-2/60 p-16 text-center space-y-4 backdrop-blur-xl">
                 <div className="size-16 rounded-2xl bg-ink-3 text-gold flex items-center justify-center mx-auto border border-hairline shadow-inner">
-                  <ShoppingBag className="size-8 text-gold" />
+                  {activeCategory === "crypto" ? (
+                    <Coins className="size-8 text-amber-400" />
+                  ) : (
+                    <Gift className="size-8 text-gold" />
+                  )}
                 </div>
                 <div className="space-y-1.5 max-w-sm mx-auto">
-                  <h3 className="font-black text-lg text-ink-fg">No rewards found</h3>
+                  <h3 className="font-black text-lg text-ink-fg">
+                    {activeCategory === "crypto"
+                      ? "No crypto rewards available"
+                      : activeCategory === "giftcard"
+                        ? "No gift cards available"
+                        : "No rewards found"}
+                  </h3>
                   <p className="text-xs text-ink-muted font-medium">
                     No items are currently listed in this category. Check back soon as new stock is
-                    added daily.
+                    added regularly.
                   </p>
                 </div>
                 {activeCategory !== "All" && (
@@ -367,18 +501,27 @@ function RedeemPage() {
           ))}
       </motion.div>
 
-      {/* Confirmation Modal */}
+      {/* Confirmation & Details Modal */}
       <Dialog open={!!selectedReward} onOpenChange={(open) => !open && setSelectedReward(null)}>
         <DialogContent className="rounded-3xl max-w-md bg-ink-2 border border-hairline text-ink-fg p-6 sm:p-7 shadow-2xl backdrop-blur-2xl">
           <DialogHeader className="space-y-2">
-            <div className="size-12 rounded-2xl bg-gold/15 border border-gold/30 text-gold flex items-center justify-center mb-1">
-              <Gift className="size-6" />
+            <div
+              className={cn(
+                "size-12 rounded-2xl border flex items-center justify-center mb-1",
+                isSelectedCrypto
+                  ? "bg-amber-500/15 border-amber-500/30 text-amber-400"
+                  : "bg-gold/15 border-gold/30 text-gold",
+              )}
+            >
+              {isSelectedCrypto ? <Coins className="size-6" /> : <Gift className="size-6" />}
             </div>
             <DialogTitle className="text-xl font-black tracking-tight text-ink-fg">
-              Confirm Redemption
+              {isSelectedCrypto ? "Withdraw Crypto (USDT TRC20)" : "Redeem Gift Card Reward"}
             </DialogTitle>
             <DialogDescription className="text-xs text-ink-muted leading-relaxed font-medium">
-              You are about to redeem your points for this reward. Please verify the details below.
+              {isSelectedCrypto
+                ? "Enter your USDT TRC20 destination wallet address below to receive your payout."
+                : "Your digital voucher will be delivered directly to your registered email address."}
             </DialogDescription>
           </DialogHeader>
 
@@ -388,7 +531,14 @@ function RedeemPage() {
               <div className="rounded-2xl p-4 bg-ink border border-hairline space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-bold text-ink-fg">{selectedReward.title}</span>
-                  <span className="text-xs font-black font-mono text-gold bg-gold/10 px-2.5 py-1 rounded-lg border border-gold/25">
+                  <span
+                    className={cn(
+                      "text-xs font-black font-mono px-2.5 py-1 rounded-lg border",
+                      isSelectedCrypto
+                        ? "text-amber-400 bg-amber-500/10 border-amber-500/25"
+                        : "text-gold bg-gold/10 border-gold/25",
+                    )}
+                  >
                     {selectedReward.cost_points.toLocaleString()} PTS
                   </span>
                 </div>
@@ -400,14 +550,85 @@ function RedeemPage() {
                 </div>
               </div>
 
-              {/* Delivery notice */}
-              <div className="rounded-2xl p-3.5 bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-2.5 text-xs text-emerald-400 font-medium">
-                <ShieldCheck className="size-4 shrink-0 mt-0.5 text-emerald-400" />
-                <span>
-                  Your digital redemption code will be emailed immediately after security
-                  confirmation.
-                </span>
-              </div>
+              {/* Destination Section: Crypto vs Gift Card */}
+              {isSelectedCrypto ? (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                        <Coins className="size-3.5 text-amber-400" />
+                        <span>USDT (TRC20) Wallet Address</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handlePasteAddress}
+                        className="text-[11px] text-ink-muted hover:text-gold font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <ClipboardPaste className="size-3" />
+                        <span>Paste</span>
+                      </button>
+                    </div>
+
+                    <Input
+                      type="text"
+                      placeholder="e.g. TF1794wHG..."
+                      value={walletAddress}
+                      onChange={(e) => {
+                        setWalletAddress(e.target.value);
+                        if (walletError) validateWalletAddress(e.target.value);
+                      }}
+                      className={cn(
+                        "h-12 rounded-xl font-mono text-xs bg-ink border-hairline focus:border-amber-500",
+                        walletError && "border-destructive focus:border-destructive",
+                      )}
+                    />
+                    {walletError && (
+                      <p className="text-[11px] font-medium text-destructive flex items-center gap-1">
+                        <AlertTriangle className="size-3 shrink-0" />
+                        <span>{walletError}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Warning Notice for TRC20 */}
+                  <div className="rounded-2xl p-3 bg-amber-500/10 border border-amber-500/25 flex items-start gap-2.5 text-xs text-amber-400 font-medium leading-relaxed">
+                    <AlertTriangle className="size-4 shrink-0 mt-0.5 text-amber-400" />
+                    <span>
+                      <strong className="font-bold">Tron (TRC20) Network Only:</strong> Please ensure
+                      your address starts with <strong>T</strong>. Transfers to non-TRC20 networks
+                      (such as ERC20 or BEP20) cannot be recovered.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {/* Delivery email confirmation card */}
+                  <div className="rounded-2xl p-4 bg-ink border border-hairline space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-ink-muted flex items-center gap-1.5">
+                        <Mail className="size-3.5 text-gold" />
+                        <span>Delivery Destination</span>
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/25 flex items-center gap-1">
+                        <ShieldCheck className="size-3" /> Registered Email
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-xl bg-ink-2 border border-hairline/80 font-mono text-xs font-bold text-ink-fg flex items-center justify-between">
+                      <span>{profile?.email || "Your account email"}</span>
+                      <Mail className="size-4 text-ink-muted" />
+                    </div>
+                  </div>
+
+                  {/* Delivery notice */}
+                  <div className="rounded-2xl p-3.5 bg-emerald-500/10 border border-emerald-500/25 flex items-start gap-2.5 text-xs text-emerald-400 font-medium leading-relaxed">
+                    <ShieldCheck className="size-4 shrink-0 mt-0.5 text-emerald-400" />
+                    <span>
+                      Your digital gift code, PIN, and redemption guide will be delivered directly
+                      to your registered inbox once verified.
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -421,9 +642,14 @@ function RedeemPage() {
               Cancel
             </Button>
             <Button
-              className="rounded-xl font-bold h-11 text-xs bg-gold text-ink hover:bg-gold-soft cursor-pointer shadow-md shadow-gold/10"
+              className={cn(
+                "rounded-xl font-bold h-11 text-xs cursor-pointer shadow-md",
+                isSelectedCrypto
+                  ? "bg-amber-500 text-ink hover:bg-amber-400 shadow-amber-500/10 font-black"
+                  : "bg-gold text-ink hover:bg-gold-soft shadow-gold/10 font-black",
+              )}
               onClick={handleRedeem}
-              disabled={isRedeeming}
+              disabled={isRedeeming || (isSelectedCrypto && !walletAddress.trim())}
             >
               {isRedeeming ? (
                 <span className="flex items-center gap-2">
@@ -431,7 +657,10 @@ function RedeemPage() {
                 </span>
               ) : (
                 <span className="flex items-center gap-1.5">
-                  <CheckCircle2 className="size-4" /> Confirm & Claim Reward
+                  <CheckCircle2 className="size-4" />
+                  <span>
+                    {isSelectedCrypto ? "Confirm & Withdraw USDT" : "Confirm & Claim Gift Card"}
+                  </span>
                 </span>
               )}
             </Button>

@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, Edit2, Trash2, Loader2, Save, Image as ImageIcon, X } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader2, Save, Image as ImageIcon, X, Coins, Gift } from "lucide-react";
 import { uploadImageWithFallback } from "@/lib/upload-image";
+import { cn } from "@/lib/utils";
 
 export function RewardsManager() {
   const queryClient = useQueryClient();
@@ -35,7 +36,7 @@ export function RewardsManager() {
     description: "",
     cost_points: 0,
     stock_count: 0,
-    category: "Gift Cards",
+    category: "Gift Card",
     is_active: true,
     image_url: "",
   });
@@ -96,7 +97,7 @@ export function RewardsManager() {
       description: "",
       cost_points: 0,
       stock_count: 0,
-      category: "Gift Cards",
+      category: "Gift Card",
       is_active: true,
       image_url: "",
     });
@@ -104,12 +105,15 @@ export function RewardsManager() {
 
   const handleEdit = (reward: any) => {
     setEditingReward(reward);
+    const normalizedCategory = reward.category?.toLowerCase().includes("crypto")
+      ? "Crypto"
+      : "Gift Card";
     setFormData({
       title: reward.title,
       description: reward.description || "",
       cost_points: reward.cost_points,
       stock_count: reward.stock_count || 0,
-      category: reward.category || "Gift Cards",
+      category: normalizedCategory,
       is_active: reward.is_active,
       image_url: reward.image_url || "",
     });
@@ -296,18 +300,52 @@ export function RewardsManager() {
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">
-                  Category
+                  Reward Type & Category
                 </label>
-                <select
-                  className="w-full h-12 rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value="Gift Cards">Gift Cards</option>
-                  <option value="Vouchers">Vouchers</option>
-                  <option value="Cash">Cash</option>
-                  <option value="Other">Other</option>
-                </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, category: "Crypto" })}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-all cursor-pointer",
+                      formData.category === "Crypto"
+                        ? "border-amber-500 bg-amber-500/10 text-amber-500 ring-2 ring-amber-500/20 font-bold"
+                        : "border-border/60 bg-accent/30 text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
+                      <Coins className="size-4 text-amber-500" />
+                      <span>Crypto</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      USDT TRC20 Wallet
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, category: "Gift Card" })}
+                    className={cn(
+                      "flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border text-center transition-all cursor-pointer",
+                      formData.category === "Gift Card"
+                        ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/20 font-bold"
+                        : "border-border/60 bg-accent/30 text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                    )}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider">
+                      <Gift className="size-4 text-primary" />
+                      <span>Gift Card</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground font-normal">
+                      Registered Email
+                    </span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-muted-foreground px-1 leading-snug">
+                  {formData.category === "Crypto"
+                    ? "Users will be asked to provide their USDT (TRC20) wallet address when withdrawing."
+                    : "Gift cards will be sent directly to the user's registered email address upon approval."}
+                </p>
               </div>
             </div>
             <DialogFooter>
@@ -401,12 +439,23 @@ export function RewardsManager() {
                     </div>
                   </TableCell>
                   <TableCell className="px-6 py-4">
-                    <Badge
-                      variant="secondary"
-                      className="font-bold text-[10px] uppercase tracking-wider"
-                    >
-                      {reward.category || "Uncategorized"}
-                    </Badge>
+                    {reward.category?.toLowerCase().includes("crypto") ? (
+                      <Badge
+                        variant="outline"
+                        className="font-bold text-[10px] uppercase tracking-wider border-amber-500/30 text-amber-500 bg-amber-500/10 flex items-center gap-1.5 w-fit"
+                      >
+                        <Coins className="size-3" />
+                        <span>Crypto (USDT)</span>
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="font-bold text-[10px] uppercase tracking-wider border-primary/30 text-primary bg-primary/10 flex items-center gap-1.5 w-fit"
+                      >
+                        <Gift className="size-3" />
+                        <span>Gift Card</span>
+                      </Badge>
+                    )}
                   </TableCell>
                   <TableCell className="px-6 py-4 text-center">
                     <Badge
