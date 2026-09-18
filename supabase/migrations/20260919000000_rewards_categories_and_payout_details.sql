@@ -129,3 +129,5 @@ $$;
 
 REVOKE ALL ON FUNCTION public.redeem_reward(uuid, text, text) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.redeem_reward(uuid, text, text) TO authenticated, service_role;
+
+NOTIFY pgrst, 'reload schema';

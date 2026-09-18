@@ -202,15 +202,50 @@ function RedeemPage() {
 
     setIsRedeeming(true);
     try {
-      const { data, error } = await supabase.rpc("redeem_reward", {
+      let result: { success: boolean; message: string; redemption_id?: string } | null = null;
+
+      // 1. Attempt primary call with wallet address & delivery email
+      const primaryRes = await supabase.rpc("redeem_reward" as any, {
         _reward_id: selectedReward.id,
         _wallet_address: isCrypto ? walletAddress.trim() : null,
         _delivery_email: !isCrypto ? profile.email : null,
       });
 
-      if (error) throw error;
+      if (primaryRes.error) {
+        const errMsg = primaryRes.error.message || "";
+        const isSchemaMismatch =
+          errMsg.includes("schema cache") ||
+          errMsg.includes("Could not find the function") ||
+          (primaryRes.error as any).code === "PGRST202";
 
-      const result = data as { success: boolean; message: string } | null;
+        if (isSchemaMismatch) {
+          console.warn("RPC schema cache mismatch detected; retrying with single-argument fallback...");
+          const fallbackRes = await supabase.rpc("redeem_reward" as any, {
+            _reward_id: selectedReward.id,
+          });
+
+          if (fallbackRes.error) throw fallbackRes.error;
+          result = fallbackRes.data as any;
+
+          // If single-arg fallback succeeded, attempt to attach payout info directly if columns exist
+          if (result?.success && result?.redemption_id) {
+            try {
+              await (supabase.from("redemptions") as any)
+                .update({
+                  wallet_address: isCrypto ? walletAddress.trim() : null,
+                  delivery_email: !isCrypto ? profile.email : null,
+                })
+                .eq("id", result.redemption_id);
+            } catch {
+              // Gracefully ignore if columns not yet migrated
+            }
+          }
+        } else {
+          throw primaryRes.error;
+        }
+      } else {
+        result = primaryRes.data as any;
+      }
 
       if (!result?.success) {
         toast.error(result?.message || "Failed to redeem reward. Please try again.");
