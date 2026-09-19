@@ -210,6 +210,9 @@ function RootComponent() {
   const publicRoutes = ["/", "/landing", "/about", "/privacy", "/terms"];
   const isPublicPage = publicRoutes.includes(location.pathname);
   const isAuthPage = location.pathname.startsWith("/auth");
+  const isAdminRoute =
+    location.pathname.startsWith("/admin") ||
+    location.pathname.startsWith("/moderator");
   const { queryClient } = Route.useRouteContext();
 
   useEffect(() => {
@@ -296,14 +299,16 @@ function RootComponent() {
             !isAuthPage && !isPublicPage && "bg-background text-foreground",
           )}
         >
-          {!isAuthPage && !isPublicPage && <Navigation />}
-          {!isAuthPage && !isPublicPage && <MobileTabBar />}
+          {!isAuthPage && !isPublicPage && !isAdminRoute && <Navigation />}
+          {!isAuthPage && !isPublicPage && !isAdminRoute && <MobileTabBar />}
           <main
             className={cn(
               "flex-1 transition-all duration-300 w-full flex flex-col",
               !isPublicPage &&
                 !isAuthPage &&
+                !isAdminRoute &&
                 "md:ml-[var(--app-sidebar-w)] w-full md:w-[calc(100%-var(--app-sidebar-w))] pb-20 md:pb-0",
+              isAdminRoute && "w-full pb-0",
             )}
           >
             <div
@@ -311,7 +316,9 @@ function RootComponent() {
                 "flex-1 w-full",
                 !isPublicPage &&
                   !isAuthPage &&
+                  !isAdminRoute &&
                   "pt-24 md:pt-28 pb-12 px-4 md:px-8 max-w-7xl mx-auto",
+                isAdminRoute && "w-full p-0 max-w-none",
               )}
             >
               <Outlet />
@@ -319,9 +326,9 @@ function RootComponent() {
           </main>
         </div>
         <Toaster />
-        <Onboarding />
-        <VideoAdInterstitial />
-        <WelcomeBonusModal />
+        {!isAdminRoute && <Onboarding />}
+        {!isAdminRoute && <VideoAdInterstitial />}
+        {!isAdminRoute && <WelcomeBonusModal />}
       </ThemeProvider>
     </QueryClientProvider>
   );

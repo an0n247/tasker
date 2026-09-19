@@ -2,7 +2,9 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminPanel } from "@/components/AdminPanel";
 import { AccessDenied } from "@/components/admin/AccessDenied";
+import { AdminHeader } from "@/components/admin/AdminHeader";
 import { useQuery } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/moderator")({
   loader: async ({ location }) => {
@@ -38,8 +40,15 @@ function ModeratorRouteComponent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-accent/5">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <div className="min-h-[60vh] flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="size-8 animate-spin text-primary" />
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+              Verifying Moderator Credentials...
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -48,20 +57,24 @@ function ModeratorRouteComponent() {
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-accent/5">
-        <AccessDenied />
+      <div className="min-h-screen flex flex-col bg-background text-foreground">
+        <AdminHeader roleTitle="Unauthorized" />
+        <div className="flex-1 flex items-center justify-center py-16">
+          <AccessDenied />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-accent/5 pb-12">
-      <div className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-4xl font-black tracking-tight text-foreground uppercase">
-            Moderator Panel
+    <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/20">
+      <AdminHeader roleTitle="Moderator" />
+      <div className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <div className="flex flex-col gap-1.5 border-b border-border/60 pb-4">
+          <h1 className="text-3xl font-black tracking-tight text-foreground uppercase">
+            Moderator Console
           </h1>
-          <p className="text-muted-foreground font-medium">
+          <p className="text-sm text-muted-foreground font-medium">
             Review tasks, handle redemptions, and monitor platform activity.
           </p>
         </div>
