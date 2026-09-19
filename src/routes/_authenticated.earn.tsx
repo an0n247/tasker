@@ -26,6 +26,7 @@ import {
   Info,
   Sparkles,
   Calendar,
+  Copy,
 } from "lucide-react";
 import VastAdModal from "@/components/VastAdModal";
 import { toast } from "sonner";
@@ -325,11 +326,54 @@ function EarnPage() {
   const inProgressCount = inProgressTasks.length;
   const completedCount = completedTasks.length;
 
+  const openTaskLink = (rawUrl?: string | null) => {
+    if (!rawUrl) return false;
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return false;
+    const finalUrl =
+      trimmed.startsWith("http://") || trimmed.startsWith("https://")
+        ? trimmed
+        : `https://${trimmed}`;
+
+    try {
+      const win = window.open(finalUrl, "_blank", "noopener,noreferrer");
+      if (!win || win.closed || typeof win.closed === "undefined") {
+        const anchor = document.createElement("a");
+        anchor.href = finalUrl;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      }
+      return true;
+    } catch (e) {
+      console.error("Failed to open link:", e);
+      try {
+        const anchor = document.createElement("a");
+        anchor.href = finalUrl;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      } catch {
+        window.location.href = finalUrl;
+      }
+      return true;
+    }
+  };
+
   const handleStartTaskExecution = (task: any) => {
     setInstructionModalTask(null);
 
     const taskAny = task as any;
     if (taskAny.category === "Ads Link") {
+      // Synchronously open the link immediately on user action
+      if (taskAny.link_url) {
+        openTaskLink(taskAny.link_url);
+      }
+
       const recordClick = async () => {
         const {
           data: { user: authUser },
@@ -362,10 +406,6 @@ function EarnPage() {
           return;
         }
 
-        if (taskAny.link_url) {
-          window.open(taskAny.link_url, "_blank");
-        }
-
         const { data, error } = await (supabase.rpc as any)("record_ads_link_click", {
           _user_id: authUser.id,
           _task_id: taskAny.id,
@@ -386,6 +426,14 @@ function EarnPage() {
 
       void recordClick();
       return;
+    }
+
+    // Always open task link for standard tasks!
+    if (task.link_url) {
+      openTaskLink(task.link_url);
+      toast.info("Task link opened in a new tab! Complete the task and confirm below to claim your points.");
+    } else {
+      toast.info("Task started! Complete the steps and confirm below to claim your points.");
     }
 
     setTaskUiStates((prev) => ({ ...prev, [task.id]: "verifying" }));
@@ -803,6 +851,19 @@ function EarnPage() {
 
                     {/* Action Button Area */}
                     <div className="pt-5 mt-4 border-t border-hairline">
+                      {currentUi === "awaiting_confirmation" && task.link_url && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openTaskLink(task.link_url);
+                          }}
+                          className="w-full mb-2.5 py-2 px-3 rounded-xl bg-ink-3/90 hover:bg-ink-3 text-[11px] font-bold text-gold border border-gold/25 flex items-center justify-center gap-1.5 transition-all shadow-sm cursor-pointer hover:border-gold/50"
+                        >
+                          <ExternalLink className="size-3 text-gold" />
+                          <span>Re-open Task Link</span>
+                        </button>
+                      )}
                       <Button
                         className={cn(
                           "w-full rounded-xl font-bold h-11 text-xs transition-all shadow-md cursor-pointer",
@@ -1209,6 +1270,46 @@ function EarnPage() {
                         </li>
                       </ul>
                     </div>
+
+                    {/* Task Link Display Box */}
+                    {instructionModalTask.link_url && (
+                      <div className="p-3.5 rounded-2xl bg-ink-3/90 border border-gold/25 space-y-1.5 text-left">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-gold">
+                          <span className="flex items-center gap-1.5">
+                            <ExternalLink className="size-3.5" /> Destination Task Link
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigator.clipboard.writeText(instructionModalTask.link_url);
+                              toast.success("Task link copied to clipboard!");
+                            }}
+                            className="hover:text-gold-soft text-[10px] text-ink-muted cursor-pointer flex items-center gap-1 transition-colors"
+                          >
+                            <Copy className="size-3" />
+                            <span>Copy</span>
+                          </button>
+                        </div>
+                        <a
+                          href={
+                            instructionModalTask.link_url.startsWith("http://") ||
+                            instructionModalTask.link_url.startsWith("https://")
+                              ? instructionModalTask.link_url
+                              : `https://${instructionModalTask.link_url}`
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openTaskLink(instructionModalTask.link_url);
+                          }}
+                          className="font-mono text-[11px] text-ink-fg hover:text-gold break-all underline decoration-hairline hover:decoration-gold block cursor-pointer transition-colors"
+                        >
+                          {instructionModalTask.link_url}
+                        </a>
+                      </div>
+                    )}
 
                     {/* Hint if keyword task */}
                     {parsedKeyword.hasKeyword && parsedKeyword.hint && (

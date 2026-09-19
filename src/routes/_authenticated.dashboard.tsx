@@ -386,11 +386,53 @@ function Dashboard() {
     }
   };
 
+  const openTaskLink = (rawUrl?: string | null) => {
+    if (!rawUrl) return false;
+    const trimmed = rawUrl.trim();
+    if (!trimmed) return false;
+    const finalUrl =
+      trimmed.startsWith("http://") || trimmed.startsWith("https://")
+        ? trimmed
+        : `https://${trimmed}`;
+
+    try {
+      const win = window.open(finalUrl, "_blank", "noopener,noreferrer");
+      if (!win || win.closed || typeof win.closed === "undefined") {
+        const anchor = document.createElement("a");
+        anchor.href = finalUrl;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      }
+      return true;
+    } catch (e) {
+      console.error("Failed to open link:", e);
+      try {
+        const anchor = document.createElement("a");
+        anchor.href = finalUrl;
+        anchor.target = "_blank";
+        anchor.rel = "noopener noreferrer";
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+      } catch {
+        window.location.href = finalUrl;
+      }
+      return true;
+    }
+  };
+
   const handleFeaturedTaskClick = async (task: any) => {
     if (task.category !== "Ads Link") {
-      if (task.link_url) window.open(task.link_url, "_blank");
+      if (task.link_url) openTaskLink(task.link_url);
       toast.info("Task opened! Complete it and submit proof on the Earn page.");
       return;
+    }
+
+    if (task.link_url) {
+      openTaskLink(task.link_url);
     }
 
     const {
@@ -422,8 +464,6 @@ function Dashboard() {
       queryClient.invalidateQueries({ queryKey: ["daily-task-stats"] });
       return;
     }
-
-    if (task.link_url) window.open(task.link_url, "_blank");
 
     const { data, error } = await (supabase.rpc as any)("record_ads_link_click", {
       _user_id: authUser.id,
