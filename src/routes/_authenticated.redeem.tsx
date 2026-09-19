@@ -16,6 +16,12 @@ import {
   ClipboardPaste,
   AlertTriangle,
   Info,
+  Clock,
+  XCircle,
+  AlertCircle,
+  Copy,
+  Check,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,6 +92,9 @@ function RedeemPage() {
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [copiedAddressId, setCopiedAddressId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: rewards, isLoading } = useQuery({
@@ -114,6 +123,134 @@ function RedeemPage() {
       return data;
     },
   });
+
+  const {
+    data: myRedemptions,
+    isLoading: isLoadingHistory,
+    isFetching: isFetchingHistory,
+    refetch: refetchHistory,
+  } = useQuery({
+    queryKey: ["my-redemptions", profile?.id],
+    queryFn: async () => {
+      if (!profile?.id) return [];
+      // 1. Direct query with joined rewards
+      const { data, error } = await supabase
+        .from("redemptions")
+        .select(
+          "id, user_id, reward_id, status, wallet_address, delivery_email, payout_network, created_at, updated_at, rejection_reason, rewards(title, cost_points, category, image_url)"
+        )
+        .eq("user_id", profile.id)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        return data;
+      }
+
+      // 2. Fallback to RPC function get_my_redemptions() if direct query fails
+      const { data: rpcData, error: rpcError } = await (supabase.rpc as any)("get_my_redemptions");
+      if (rpcError) {
+        console.warn("Could not fetch user redemptions:", error || rpcError);
+        return [];
+      }
+      return (rpcData || []).map((r: any) => ({
+        id: r.id,
+        user_id: r.user_id,
+        reward_id: r.reward_id,
+        status: r.status,
+        wallet_address: r.wallet_address,
+        delivery_email: r.delivery_email,
+        payout_network: r.payout_network,
+        created_at: r.created_at,
+        updated_at: r.updated_at,
+        rejection_reason: r.rejection_reason,
+        rewards: {
+          title: r.reward_title,
+          cost_points: r.reward_cost_points,
+          category: r.reward_category,
+          image_url: r.reward_image_url,
+        },
+      }));
+    },
+    enabled: !!profile?.id,
+  });
+
+  const pendingRedemptions = (myRedemptions || []).filter(
+    (r: any) => r.status === "pending" || r.status === "review_required",
+  );
+  const approvedRedemptions = (myRedemptions || []).filter(
+    (r: any) => r.status === "approved" || r.status === "completed",
+  );
+  const rejectedRedemptions = (myRedemptions || []).filter(
+    (r: any) => r.status === "rejected" || r.status === "declined",
+  );
+
+  const filteredRedemptionsList = (myRedemptions || []).filter((r: any) => {
+    if (historyFilter === "all") return true;
+    if (historyFilter === "pending") return r.status === "pending" || r.status === "review_required";
+    if (historyFilter === "approved") return r.status === "approved" || r.status === "completed";
+    if (historyFilter === "rejected") return r.status === "rejected" || r.status === "declined";
+    return true;
+  });
+
+  const handleCopyAddress = (id: string, address: string) => {
+    navigator.clipboard.writeText(address);
+    setCopiedAddressId(id);
+    toast.success("Wallet address copied to clipboard!");
+    setTimeout(() => {
+      setCopiedAddressId(null);
+    }, 2000);
+  };
+
+  const renderStatusBadge = (status: string) => {
+    const norm = (status || "").toLowerCase();
+    if (norm === "approved" || norm === "completed") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+          <CheckCircle2 className="size-3 sm:size-3.5" />
+          <span>Approved & Sent</span>
+        </span>
+      );
+    }
+    if (norm === "rejected" || norm === "declined") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-destructive/15 text-destructive border border-destructive/30 shrink-0">
+          <XCircle className="size-3 sm:size-3.5" />
+          <span>Declined & Refunded</span>
+        </span>
+      );
+    }
+    if (norm === "review_required") {
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-purple-500/15 text-purple-400 border border-purple-500/30 shrink-0">
+          <AlertCircle className="size-3 sm:size-3.5" />
+          <span>Security Review</span>
+        </span>
+      );
+    }
+    // Default: pending
+    return (
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+        <Clock className="size-3 sm:size-3.5 animate-pulse" />
+        <span>Under Review</span>
+      </span>
+    );
+  };
+
+  const formatDateTime = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return new Intl.DateTimeFormat("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      }).format(d);
+    } catch {
+      return dateStr;
+    }
+  };
 
   const cryptoCount = rewards?.filter(isRewardCrypto).length || 0;
   const giftCardCount = rewards?.filter((r) => !isRewardCrypto(r)).length || 0;
@@ -274,6 +411,7 @@ function RedeemPage() {
 
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["redemptions"] });
+      queryClient.invalidateQueries({ queryKey: ["my-redemptions"] });
       queryClient.invalidateQueries({ queryKey: ["rewards"] });
     } catch (error: any) {
       console.error("Redemption error:", error);
@@ -333,17 +471,69 @@ function RedeemPage() {
           </div>
 
           <Button
-            asChild
+            type="button"
             variant="outline"
-            className="rounded-2xl h-auto py-3.5 px-4 border-hairline bg-ink-2/60 hover:bg-ink-3 text-xs font-bold text-ink-fg shrink-0 flex items-center gap-2 shadow-sm"
+            onClick={() => setIsHistoryOpen(true)}
+            className="rounded-2xl h-auto py-3.5 px-4 border-hairline bg-ink-2/60 hover:bg-ink-3 text-xs font-bold text-ink-fg shrink-0 flex items-center gap-2.5 shadow-sm cursor-pointer relative transition-all"
           >
-            <Link to="/transactions">
+            <div className="relative">
               <HistoryIcon className="size-4 text-gold" />
-              <span>Redemption History</span>
-            </Link>
+              {pendingRedemptions.length > 0 && (
+                <span className="absolute -top-1 -right-1 size-2 rounded-full bg-amber-400 animate-ping" />
+              )}
+            </div>
+            <span>Redemption History</span>
+            {(myRedemptions?.length || 0) > 0 && (
+              <span className="px-2 py-0.5 rounded-full bg-ink-3 border border-hairline text-[10px] font-mono text-ink-muted">
+                {myRedemptions?.length}
+              </span>
+            )}
           </Button>
         </div>
       </motion.header>
+
+      {/* Active Pending Redemptions Alert Banner */}
+      {pendingRedemptions.length > 0 && (
+        <motion.div
+          variants={fadeInUp}
+          className="rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-transparent p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm backdrop-blur-md"
+        >
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="size-11 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0 shadow-sm">
+              <Clock className="size-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-sm font-black text-ink-fg">
+                  {pendingRedemptions.length === 1
+                    ? "1 Reward Redemption Under Review"
+                    : `${pendingRedemptions.length} Reward Redemptions Under Review`}
+                </h2>
+                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-black uppercase tracking-wider border border-amber-500/30 flex items-center gap-1">
+                  <span className="size-1.5 rounded-full bg-amber-400 animate-ping" />
+                  In Progress
+                </span>
+              </div>
+              <p className="text-xs text-ink-muted mt-0.5">
+                {pendingRedemptions[0]?.rewards?.title || "Your reward request"} is currently being reviewed by our compliance team. Points remain reserved.
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setHistoryFilter("pending");
+              setIsHistoryOpen(true);
+            }}
+            className="rounded-xl border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 text-xs font-bold shrink-0 self-start sm:self-auto cursor-pointer flex items-center gap-1.5 shadow-sm"
+          >
+            <span>Track Status</span>
+            <ArrowRight className="size-3.5" />
+          </Button>
+        </motion.div>
+      )}
 
       {/* Category Navigation Pills */}
       <motion.div
@@ -706,6 +896,275 @@ function RedeemPage() {
               )}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Redemption History & Status Tracking Modal */}
+      <Dialog open={isHistoryOpen} onOpenChange={setIsHistoryOpen}>
+        <DialogContent className="sm:max-w-3xl bg-ink border-hairline p-0 overflow-hidden shadow-2xl backdrop-blur-2xl max-h-[90vh] flex flex-col">
+          {/* Header */}
+          <div className="p-5 sm:p-6 border-b border-hairline/80 bg-ink-2/70 shrink-0">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-gold/10 border border-gold/25 text-[10px] font-bold text-gold uppercase tracking-wider">
+                  <HistoryIcon className="size-3" />
+                  <span>Real-Time Tracker</span>
+                </div>
+                <DialogTitle className="text-xl sm:text-2xl font-black text-ink-fg flex items-center gap-2">
+                  <span>Redemption History</span>
+                </DialogTitle>
+                <DialogDescription className="text-xs font-medium text-ink-muted">
+                  Track your cryptocurrency withdrawals, gift card vouchers, and approval statuses in real-time.
+                </DialogDescription>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => refetchHistory()}
+                disabled={isFetchingHistory}
+                className="rounded-xl border-hairline bg-ink hover:bg-ink-3 text-xs font-bold text-ink-muted hover:text-ink-fg cursor-pointer flex items-center gap-1.5 shrink-0"
+              >
+                <RefreshCw className={cn("size-3.5", isFetchingHistory && "animate-spin text-gold")} />
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
+            </div>
+
+            {/* Filter Tabs & Counts */}
+            <div className="flex items-center gap-2 pt-4 overflow-x-auto scrollbar-none">
+              {[
+                { id: "all", label: "All Redemptions", count: myRedemptions?.length || 0 },
+                { id: "pending", label: "Under Review", count: pendingRedemptions.length },
+                { id: "approved", label: "Approved", count: approvedRedemptions.length },
+                { id: "rejected", label: "Declined", count: rejectedRedemptions.length },
+              ].map((tab) => {
+                const isActive = historyFilter === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setHistoryFilter(tab.id as any)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 border",
+                      isActive
+                        ? "bg-gold text-ink font-black border-gold shadow-sm"
+                        : "bg-ink border-hairline text-ink-muted hover:text-ink-fg hover:bg-ink-3",
+                    )}
+                  >
+                    <span>{tab.label}</span>
+                    <span
+                      className={cn(
+                        "px-1.5 py-0.2 rounded-full text-[10px] font-mono",
+                        isActive
+                          ? "bg-ink/20 text-ink font-bold"
+                          : "bg-ink-2 text-ink-muted border border-hairline/60",
+                      )}
+                    >
+                      {tab.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Body: List of Redemptions */}
+          <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-4">
+            {isLoadingHistory ? (
+              <div className="py-16 flex flex-col items-center justify-center gap-3 text-center">
+                <Loader2 className="size-8 animate-spin text-gold" />
+                <p className="text-xs font-bold text-ink-muted uppercase tracking-wider">
+                  Loading redemption records...
+                </p>
+              </div>
+            ) : filteredRedemptionsList.length === 0 ? (
+              <div className="py-14 px-4 rounded-2xl border border-hairline/70 bg-ink-2/30 text-center flex flex-col items-center justify-center space-y-3">
+                <div className="size-12 rounded-2xl bg-ink-3 border border-hairline flex items-center justify-center text-ink-muted">
+                  <Gift className="size-6 text-gold/60" />
+                </div>
+                <div className="space-y-1 max-w-xs">
+                  <p className="text-sm font-bold text-ink-fg">
+                    {historyFilter === "all"
+                      ? "No redemptions yet"
+                      : `No ${historyFilter} redemptions`}
+                  </p>
+                  <p className="text-xs text-ink-muted leading-relaxed">
+                    {historyFilter === "all"
+                      ? "When you exchange points for USDT or gift cards, your requests and live status will appear here."
+                      : `You currently have zero redemptions in '${historyFilter}' status.`}
+                  </p>
+                </div>
+                {historyFilter !== "all" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setHistoryFilter("all")}
+                    className="rounded-xl border-hairline text-xs font-bold mt-2"
+                  >
+                    View All Records
+                  </Button>
+                )}
+              </div>
+            ) : (
+              filteredRedemptionsList.map((item: any) => {
+                const isCrypto =
+                  item.payout_network?.includes("TRC20") ||
+                  Boolean(item.wallet_address) ||
+                  isRewardCrypto(item.rewards);
+                const isApproved = item.status === "approved" || item.status === "completed";
+                const isRejected = item.status === "rejected" || item.status === "declined";
+                const isPending = item.status === "pending" || item.status === "review_required";
+
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      "rounded-2xl border p-4 sm:p-5 transition-all space-y-3.5 bg-ink-2/50",
+                      isPending && "border-amber-500/30 hover:border-amber-500/50",
+                      isApproved && "border-emerald-500/30 hover:border-emerald-500/50",
+                      isRejected && "border-destructive/30 hover:border-destructive/50",
+                    )}
+                  >
+                    {/* Top Row: Title, Category, Cost & Status */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="text-sm sm:text-base font-black text-ink-fg">
+                            {item.rewards?.title || "Reward Voucher"}
+                          </h4>
+                          <span
+                            className={cn(
+                              "text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border",
+                              isCrypto
+                                ? "bg-amber-500/10 text-amber-400 border-amber-500/25"
+                                : "bg-purple-500/10 text-purple-400 border-purple-500/25",
+                            )}
+                          >
+                            {isCrypto ? "Crypto (USDT TRC20)" : "Digital Gift Card"}
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-medium text-ink-muted">
+                          Requested on {formatDateTime(item.created_at)}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 self-start sm:self-auto">
+                        <span className="text-xs sm:text-sm font-black font-mono text-gold bg-gold/10 px-2.5 py-1 rounded-xl border border-gold/20">
+                          -{Number(item.rewards?.cost_points || 0).toLocaleString()} PTS
+                        </span>
+                        {renderStatusBadge(item.status)}
+                      </div>
+                    </div>
+
+                    {/* Destination Row */}
+                    {isCrypto ? (
+                      <div className="rounded-xl bg-ink p-3 border border-hairline/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="space-y-0.5 overflow-hidden">
+                          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider flex items-center gap-1.5">
+                            <Coins className="size-3 text-amber-400" />
+                            <span>Destination Wallet (TRC20)</span>
+                          </span>
+                          <span className="font-mono text-xs font-bold text-ink-fg block truncate select-all">
+                            {item.wallet_address || "Wallet address recorded"}
+                          </span>
+                        </div>
+                        {item.wallet_address && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleCopyAddress(item.id, item.wallet_address)}
+                            className="rounded-lg h-7 px-2.5 text-[11px] font-bold border-hairline hover:bg-ink-3 shrink-0 self-start sm:self-auto cursor-pointer flex items-center gap-1"
+                          >
+                            {copiedAddressId === item.id ? (
+                              <>
+                                <Check className="size-3 text-emerald-400" />
+                                <span className="text-emerald-400">Copied!</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy className="size-3" />
+                                <span>Copy</span>
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-xl bg-ink p-3 border border-hairline/80 flex items-center justify-between gap-3">
+                        <div className="space-y-0.5 overflow-hidden">
+                          <span className="text-[10px] font-bold text-ink-muted uppercase tracking-wider flex items-center gap-1.5">
+                            <Mail className="size-3 text-gold" />
+                            <span>Delivery Destination</span>
+                          </span>
+                          <span className="font-mono text-xs font-bold text-ink-fg block truncate">
+                            {item.delivery_email || profile?.email || "Account email address"}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/25 shrink-0 flex items-center gap-1">
+                          <ShieldCheck className="size-3" /> Verified
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Status Tracking Explanation */}
+                    {isPending && (
+                      <div className="rounded-xl p-3 bg-amber-500/10 border border-amber-500/20 flex items-start gap-2.5 text-xs text-amber-300 font-medium leading-relaxed">
+                        <Clock className="size-4 shrink-0 mt-0.5 text-amber-400" />
+                        <span>
+                          <strong>Pending Verification:</strong> Our security and compliance team is validating this request. Once approved, the payout will be dispatched automatically.
+                        </span>
+                      </div>
+                    )}
+
+                    {isApproved && (
+                      <div className="rounded-xl p-3 bg-emerald-500/10 border border-emerald-500/20 flex items-start gap-2.5 text-xs text-emerald-300 font-medium leading-relaxed">
+                        <CheckCircle2 className="size-4 shrink-0 mt-0.5 text-emerald-400" />
+                        <span>
+                          <strong>Approved & Sent:</strong> Payout has been completed.
+                          {isCrypto
+                            ? " Please check your TRC20 wallet balance on the Tron network."
+                            : " Your digital voucher and activation code have been sent to your delivery email."}
+                        </span>
+                      </div>
+                    )}
+
+                    {isRejected && (
+                      <div className="rounded-xl p-3 bg-destructive/10 border border-destructive/25 space-y-1 text-xs">
+                        <div className="flex items-center gap-1.5 text-destructive font-bold">
+                          <AlertTriangle className="size-3.5" />
+                          <span>Request Declined</span>
+                        </div>
+                        <p className="text-ink-fg/90">
+                          {item.rejection_reason || "This redemption did not pass security checks."}
+                        </p>
+                        <p className="text-[11px] text-ink-muted">
+                          Your points have been automatically restored to your available balance.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Dialog Footer */}
+          <div className="p-4 border-t border-hairline/80 bg-ink-2/60 flex items-center justify-between gap-3 shrink-0">
+            <span className="text-[11px] text-ink-muted">
+              Showing {filteredRedemptionsList.length} of {myRedemptions?.length || 0} total requests
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsHistoryOpen(false)}
+              className="rounded-xl font-bold h-9 text-xs border-hairline hover:bg-ink-3 cursor-pointer"
+            >
+              Close
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </motion.div>
